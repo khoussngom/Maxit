@@ -1,0 +1,15 @@
+{
+    "name": "dialibatoul-marakhib/maxit",
+    "autoload": {
+        "psr-4": {
+            "DialibatoulMarakhib\\Maxit\\": "src/"
+        }
+    },
+    "authors": [
+        {
+            "name": "khoussngom",
+            "email": "khoussn@gmail.com"
+        }
+    ],
+    "require": {}
+}
