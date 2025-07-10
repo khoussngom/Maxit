@@ -6,5 +6,20 @@ $vendorDir = dirname(__DIR__);
 $baseDir = dirname($vendorDir);
 
 return array(
+    'Symfony\\Polyfill\\Php80\\' => array($vendorDir . '/symfony/polyfill-php80'),
+    'Symfony\\Polyfill\\Mbstring\\' => array($vendorDir . '/symfony/polyfill-mbstring'),
+    'Symfony\\Polyfill\\Ctype\\' => array($vendorDir . '/symfony/polyfill-ctype'),
+    'PhpOption\\' => array($vendorDir . '/phpoption/phpoption/src/PhpOption'),
+    'GrahamCampbell\\ResultType\\' => array($vendorDir . '/graham-campbell/result-type/src'),
+    'Dotenv\\' => array($vendorDir . '/vlucas/phpdotenv/src'),
     'DialibatoulMarakhib\\Maxit\\' => array($baseDir . '/src'),
+    'App\\Services\\' => array($baseDir . '/src/services'),
+    'App\\Routes\\' => array($baseDir . '/src/routes'),
+    'App\\Repository\\' => array($baseDir . '/src/repository'),
+    'App\\Middlewares\\' => array($baseDir . '/app/core/middlewares'),
+    'App\\Entity\\' => array($baseDir . '/src/entity'),
+    'App\\Core\\' => array($baseDir . '/app/core'),
+    'App\\Controllers\\' => array($baseDir . '/src/controllers'),
+    'App\\Config\\' => array($baseDir . '/app/config'),
+    'App\\Abstract\\' => array($baseDir . '/app/core/abstract'),
 );

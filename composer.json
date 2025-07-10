@@ -2,14 +2,23 @@
     "name": "dialibatoul-marakhib/maxit",
     "autoload": {
         "psr-4": {
-            "DialibatoulMarakhib\\Maxit\\": "src/"
+            "DialibatoulMarakhib\\Maxit\\": "src/",
+            "App\\Controllers\\": "src/controllers/",
+            "App\\Entity\\": "src/entity/",
+            "App\\Repository\\": "src/repository/",
+            "App\\Services\\": "src/services/",
+            "App\\Routes\\": "src/routes/",
+            "App\\Config\\": "app/config/",
+            "App\\Core\\": "app/core/",
+            "App\\Abstract\\": "app/core/abstract/",
+            "App\\Middlewares\\": "app/core/middlewares/"
         }
     },
-    "authors": [
-        {
-            "name": "khoussngom",
-            "email": "khoussn@gmail.com"
-        }
-    ],
-    "require": {}
+    "authors": [{
+        "name": "khoussngom",
+        "email": "khoussn@gmail.com"
+    }],
+    "require": {
+        "vlucas/phpdotenv": "^5.6"
+    }
 }
