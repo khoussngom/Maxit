@@ -18,7 +18,10 @@ class SecurityController extends AbstractController
         $this->securityService = new SecurityService();
     }
 
-    public function create():void {}
+    public function create(): void
+    {
+        $this->renderHtml('inscription');
+    }
 
     public function login()
     {
@@ -64,7 +67,7 @@ class SecurityController extends AbstractController
         exit;
     }
 
-    public function store():void
+    public function store(): void 
     {
         $formData = [
             'login' => trim($_POST['login'] ?? ''),
@@ -72,46 +75,60 @@ class SecurityController extends AbstractController
             'prenom' => trim($_POST['prenom'] ?? ''),
             'nom' => trim($_POST['nom'] ?? ''),
             'adresse' => trim($_POST['adresse'] ?? ''),
-            'numeroIdentite' => trim($_POST['numeroIdentite'] ?? ''),
+            'numero_identite' => trim($_POST['numeroIdentite'] ?? ''),
             'telephone' => trim($_POST['telephone'] ?? ''),
-            'typePersonne' => trim($_POST['typePersonne'] ?? ''),
+            'typePersonne' => 'client',
+            'photoRecto' => null,
+            'photoVerso' => null
         ];
 
-        Validator::isEmpty('login', $formData['login']);
-        Validator::isEmpty('password', $formData['password']);
-        Validator::isEmpty('prenom', $formData['prenom']);
-        Validator::isEmpty('nom', $formData['nom']);
-        Validator::isEmpty('adresse', $formData['adresse']);
-        Validator::isEmpty('numeroIdentite', $formData['numeroIdentite']);
-        Validator::isEmpty('telephone', $formData['telephone']);
-        Validator::isEmpty('typePersonne', $formData['typePersonne']);
-        Validator::isEmail('login', $formData['login']);
+        
+        $photoRecto = Upload::save($_FILES['photorecto'] ?? null, 'uploads/cni');
+        $photoVerso = Upload::save($_FILES['photoverso'] ?? null, 'uploads/cni');
 
-        $photoRecto = Upload::save($_FILES['photorecto'], __DIR__ . '/../../public/images/upload');
-        $photoVerso = Upload::save($_FILES['photoverso'], __DIR__ . '/../../public/images/upload');
-
-        if (!empty($photoRecto['error'])) {
-            Validator::addError('photorecto', $photoRecto['error']);
+        if (!$photoRecto) {
+            Validator::addError('photorecto', 'La photo recto de la CNI est obligatoire');
+        } else {
+            $formData['photoRecto'] = $photoRecto;
         }
-        if (!empty($photoVerso['error'])) {
-            Validator::addError('photoverso', $photoVerso['error']);
+
+        if (!$photoVerso) {
+            Validator::addError('photoverso', 'La photo verso de la CNI est obligatoire');
+        } else {
+            $formData['photoVerso'] = $photoVerso;
+        }
+
+        if (empty($formData['login'])) {
+            Validator::addError('login', 'Le login est obligatoire');
+        }
+        if (empty($formData['password'])) {
+            Validator::addError('password', 'Le mot de passe est obligatoire');
+        }
+        if (empty($formData['telephone'])) {
+            Validator::addError('telephone', 'Le téléphone est obligatoire');
+        }
+        if (empty($formData['numero_identite'])) {
+            Validator::addError('numeroIdentite', 'Le numéro CNI est obligatoire');
         }
 
         if (!Validator::isValid()) {
             $this->session->set('flash_errors', Validator::getErrors());
             $this->session->set('old_input', $formData);
-            require dirname(__DIR__, 2) . '/templates/inscription.html.php';
+            $this->renderHtml('inscription');
             return;
         }
 
-        $formData['photorecto'] = $photoRecto['filename'] ?? null;
-        $formData['photoverso'] = $photoVerso['filename'] ?? null;
-        $formData['password'] = password_hash($formData['password'], PASSWORD_DEFAULT);
+        
 
-        $this->securityService->inscrire($formData);
+        if ($this->securityService->inscrire($formData)) {
+            $this->session->set('flash_success', 'Inscription réussie !');
+            header('Location: ' . getenv('BASE_URL') . '/login');
+            exit();
+        }
 
-        header('Location: /login');
-        exit;
+        $this->session->set('flash_errors', Validator::getErrors());
+        $this->session->set('old_input', $formData);
+        $this->renderHtml('inscription');
     }
 
     public function show():void {}

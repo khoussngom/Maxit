@@ -40,31 +40,50 @@ abstract class AbstractRepository
         return $cursor->fetchAll(PDO::FETCH_ASSOC);
     }
 
-    public function insert(string $table, array $data): int
+    public function insert(string $table, array $data): string
     {
         if (!$data || empty($data)) {
-            return 0;
+            return '';
         }
 
-        $columns = implode(',', array_keys($data));
-        $donnees = implode(',', array_map(fn($key) => ":{$key}", array_keys($data)));
+        $columns = implode(',', array_map(fn($key) => "\"$key\"", array_keys($data)));
+        $donnees = implode(',', array_map(fn($key) => ":$key", array_keys($data)));
 
-        $sql = "INSERT INTO {$table} ({$columns}) VALUES ({$donnees})";
+        $sql = "INSERT INTO {$table} ({$columns}) VALUES ({$donnees}) RETURNING telephone";
+        error_log("SQL: " . $sql);
 
-        $cursor = $this->pdo->prepare($sql);
-        $cursor->execute($data);
-
-        return (int)$this->pdo->lastInsertId();
+        try {
+            $cursor = $this->pdo->prepare($sql);
+            $cursor->execute($data);
+            
+            $result = $cursor->fetch(PDO::FETCH_ASSOC);
+            return $result['telephone'] ?? '';
+        } catch (PDOException $e) {
+            error_log("Erreur SQL : " . $e->getMessage());
+            throw $e;
+        }
     }
     
 
-    public function findById(string $table, int $id): ?array
+    public function findById(string $table, string $telephone): ?array
     {
-        $sql = "SELECT * FROM $table WHERE id = :id";
+        $sql = "SELECT * FROM {$table} WHERE telephone = :telephone";
         $cursor = $this->pdo->prepare($sql);
-        $cursor->execute(['id' => $id]);
+        $cursor->execute(['telephone' => $telephone]);
         $result = $cursor->fetch(PDO::FETCH_ASSOC);
         return $result ?: null;
+    }
+    
+    public function getTableColumns(string $table): array
+    {
+        $sql = "SELECT column_name, data_type 
+                FROM information_schema.columns 
+                WHERE table_name = :table 
+                ORDER BY ordinal_position";
+        $cursor = $this->pdo->prepare($sql);
+        $cursor->execute(['table' => $table]);
+
+        return $cursor->fetchAll(PDO::FETCH_ASSOC);
     }
 }
 

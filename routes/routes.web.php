@@ -20,29 +20,9 @@ return $routes = [
         'middlewares' => ['auth'],
         'action' => 'index'
     ],
-    '/commandes/create' => [
-        'controller' => "CommandeController::class",
-        'middlewares' => ['auth', 'isVendeur'],
-        'action' => 'create'
-    ], 
-    '/commandes/store' => [
-        'controller' => "CommandeController::class",
-        'middlewares' => ['auth', 'isVendeur'],
-        'action' => 'store'
-    ],
-    '/factures/show' => [
-        'controller' => "FactureController::class",
-        'middlewares' => ['auth', 'isVendeur'],
-        'action' => 'show'  
-    ], 
-    '/client/commandes' => [
-        'controller' => "CommandeController::class",
-        'middlewares' => ['auth', 'isClient'],
-        'action' => 'listComClient'
-    ],
     '/inscription' => [
         'controller' => SecurityController::class,
-        'action' => 'inscription'
+        'action' => 'store'
     ],
     // '/accueil' => [
     //     'controller' => AcceuilController::class,

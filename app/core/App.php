@@ -1,6 +1,8 @@
 <?php
 use App\Core\Router;
+use App\Core\Database;
 use App\Abstract\AbstractRepository;
+
 class App
 {
     private static ?App $instance = null;
@@ -16,7 +18,7 @@ class App
     private function __construct()
     {
         $this->dependencies["core"]["router"] = new Router();
-        $this->dependencies["core"]["database"] = AbstractRepository::ConnectToDatabase();
+        $this->dependencies["core"]["database"] = Database::getInstance();
     }
 
     public static function getInstance(): App

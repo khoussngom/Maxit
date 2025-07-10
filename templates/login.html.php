@@ -24,11 +24,17 @@
             <div class="max-w-sm p-10  rounded-xl shadow-[0_0px_15px_black] mx-auto w-full">
                 <h2 class="text-3xl font-bold text-orange-500 mb-8 text-center">LOGIN</h2>
 
-            
+                <?php if ($flash_success = $_SESSION['flash_success'] ?? null): ?>
+                    <div class="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded relative mb-4">
+                        <?= htmlspecialchars($flash_success) ?>
+                    </div>
+                    <?php unset($_SESSION['flash_success']); ?>
+                <?php endif; ?>
+
                 <?php $errors = $_SESSION['flash_errors'] ?? []; ?>
                 <form method="POST" action="/login" class="space-y-6">
                     <div>
-                        <label class="block text-sm font-medium text-gray-600 mb-2">Numéro de téléphone ou Email</label>
+                        <label class="block text-sm font-medium text-gray-600 mb-2">Numéro de téléphone ou Login</label>
                         <input type="text" name="login" value="<?= htmlspecialchars($_SESSION['old_input']['login'] ?? '') ?>" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent hover:border-orange-500 transition-colors duration-200">
                         <?php if (!empty($errors['login'])): ?>
                             <div class="text-red-600 text-sm"><?= htmlspecialchars($errors['login']) ?></div>

@@ -4,27 +4,37 @@ namespace App\Core;
 
 class Upload
 {
-    public static function save($file, $destinationDir, $allowedTypes = ['image/jpeg', 'image/png'], $maxSize = 2097152)
+    public static function save($file, string $directory): ?string
     {
-        if ($file['error'] !== UPLOAD_ERR_OK) {
-            return ['error' => 'Erreur lors de l\'upload.'];
+        if (!isset($file) || !is_array($file) || $file['error'] !== UPLOAD_ERR_OK) {
+            error_log('Erreur upload: fichier non valide ou erreur. Détails: ' . print_r($file ?? 'null', true));
+            return null;
         }
 
+        $allowedTypes = ['image/jpeg', 'image/png', 'image/jpg'];
         if (!in_array($file['type'], $allowedTypes)) {
-            return ['error' => 'Type de fichier non autorisé.'];
+            error_log('Type de fichier non autorisé: ' . $file['type']);
+            return null;
         }
 
-        if ($file['size'] > $maxSize) {
-            return ['error' => 'Fichier trop volumineux.'];
+        $uploadDir = dirname(__DIR__, 2) . '/public/' . $directory;
+        if (!is_dir($uploadDir)) {
+            if (!mkdir($uploadDir, 0777, true)) {
+                error_log('Erreur création répertoire: ' . $uploadDir);
+                return null;
+            }
         }
 
-        $filename = uniqid() . '_' . basename($file['name']);
-        $destination = rtrim($destinationDir, '/') . '/' . $filename;
+        $extension = strtolower(pathinfo($file['name'], PATHINFO_EXTENSION));
+        $filename = uniqid() . '_' . time() . '.' . $extension;
+        $destination = $uploadDir . '/' . $filename;
 
         if (!move_uploaded_file($file['tmp_name'], $destination)) {
-            return ['error' => 'Impossible de sauvegarder le fichier.'];
+            error_log('Erreur déplacement fichier vers: ' . $destination);
+            return null;
         }
 
-        return ['success' => true, 'filename' => $filename];
+        chmod($destination, 0644);
+        return $directory . '/' . $filename;
     }
 }

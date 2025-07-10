@@ -1,16 +1,31 @@
 <?php
 
 namespace App\Controllers;
-use App\Middlewares\Auth;
+
+use App\Entity\PersonneEntity;
+use App\Services\CompteService;
 use App\Abstract\AbstractController;
 
 class AcceuilController extends AbstractController
 {
-        public function index():void
+    private CompteService $compteService;
+
+    public function __construct()
     {
-        // $auth = new Auth();
-        // $auth();
-        $this->renderHtml('acceuil');
+        parent::__construct();
+        $this->compteService = new CompteService();
+    }
+
+    public function index(): void
+    {
+    
+        $user = $_SESSION['user'];
+        $solde = $this->compteService->getSolde($user->getTelephone());
+        
+        $this->renderHtml('acceuil', [
+            'user' => $user,
+            'solde' => $solde
+        ]);
     }
     public function create():void {}
 

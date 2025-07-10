@@ -160,7 +160,7 @@ class PersonneEntity extends AbstractEntity
     {
         if (
             empty($data['telephone']) ||
-            empty($data['numeroIdentite']) ||
+            empty($data['numero_identite']) ||
             empty($data['typePersonne'])
         ) {
             throw new \InvalidArgumentException("Champs obligatoires manquants pour PersonneEntity::toObject");
@@ -168,7 +168,7 @@ class PersonneEntity extends AbstractEntity
 
         $personne = new self(
             $data['telephone'],
-            $data['numeroIdentite'],
+            $data['numero_identite'],
             $data['typePersonne']
         );
         $personne->setPhotorecto($data['photorecto'] ?? null);
@@ -185,7 +185,7 @@ class PersonneEntity extends AbstractEntity
     {
         return [
             'telephone'      => $this->telephone ?? null,
-            'numeroIdentite' => $this->numeroIdentite ?? null,
+            'numero_identite' => $this->numeroIdentite ?? null,
             'photorecto'     => $this->photorecto ?? null,
             'photoverso'     => $this->photoverso ?? null,
             'prenom'         => $this->prenom ?? null,

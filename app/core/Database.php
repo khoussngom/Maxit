@@ -25,6 +25,8 @@ class Database
                 ]);
                 
                 self::$instance->exec("SET NAMES 'UTF8'");
+                self::$instance->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+                self::$instance->setAttribute(PDO::ATTR_EMULATE_PREPARES, false);
             } catch (PDOException $e) {
                 die('Erreur de connexion à la base de données : ' . $e->getMessage());
             }

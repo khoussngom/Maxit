@@ -20,6 +20,7 @@
                     <div class="flex items-center space-x-3">
                         <span class="text-orange-500 text-xl font-semibold">Solde:</span>
                         <div class="flex items-center space-x-2">
+                            <span class="text-white text-xl"><?= number_format($solde, 0, ',', ' ') ?> FCFA</span>
                             <i class='bx bx-show text-orange-500'></i>
                         </div>
                     </div>
