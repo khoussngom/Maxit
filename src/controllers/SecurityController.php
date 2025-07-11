@@ -67,11 +67,10 @@ class SecurityController extends AbstractController
                 }
                 
                 $personne = $securityService->seConnecter($login, $password);
-                
+        
                 if ($personne) {
-                    // Stocker les informations de l'utilisateur dans la session
                     $session->set('user', $personne);
-                    $session->set('user_id', $personne->getTelephone()); // Assurez-vous que cette ligne existe
+                    $session->set('user_id', $personne->getTelephone());
                     $session->set('user_type', $personne->getTypePersonne());
                     $session->set('logged_in', true);
                     
@@ -217,9 +216,13 @@ class SecurityController extends AbstractController
     
     public function destroy():void {}
 
-    public function index():void
+    public function index(): void
     {
-        $this->renderHtml('login');
+        if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+            $this->login();
+        } else {
+            $this->renderHtml('login');
+        }
     }
 
     public function logout()

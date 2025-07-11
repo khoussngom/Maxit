@@ -51,6 +51,9 @@ class App
                 try {
                     $this->dependencies['personneRepository'] = new PersonneRepository();
                     $this->dependencies['compteRepository'] = new CompteRepository();
+                    $this->dependencies['transactionRepository'] = function() {
+                        return new \App\Repository\TransactionRepository($this->getDependency('db'));
+                    };
                 } catch (\Exception $e) {
                     error_log("Erreur d'initialisation des repositories: " . $e->getMessage());
                 }
@@ -78,9 +81,12 @@ class App
     public function getDependency(string $name)
     {
         if (!isset($this->dependencies[$name])) {
-            $availableDeps = implode(', ', array_keys($this->dependencies));
-            error_log("Dépendance '$name' non trouvée. Dépendances disponibles: $availableDeps");
-            throw new \Exception("Dépendance '$name' non trouvée. Dépendances disponibles: $availableDeps");
+            throw new \Exception("Dépendance '$name' non trouvée. Dépendances disponibles: " . implode(', ', array_keys($this->dependencies)));
+        }
+        
+        // Si la dépendance est une closure, l'exécuter et stocker le résultat
+        if ($this->dependencies[$name] instanceof \Closure) {
+            $this->dependencies[$name] = $this->dependencies[$name]();
         }
         
         return $this->dependencies[$name];

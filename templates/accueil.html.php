@@ -106,6 +106,128 @@
             </div>
         </div>
     </div>
+
+    <div class="container mx-auto px-4 py-8">
+        <h1 class="text-2xl font-bold mb-6">Tableau de bord</h1>
+
+        <?php if (isset($user)): ?>
+        <div class="bg-white rounded-lg shadow-md p-6 mb-6">
+            <h2 class="text-xl font-semibold mb-4">Bienvenue, <?= htmlspecialchars($user->getPrenom() . ' ' . $user->getNom()) ?></h2>
+            <p class="text-gray-600">
+                Téléphone: <?= htmlspecialchars($user->getTelephone()) ?><br>
+                Adresse: <?= htmlspecialchars($user->getAdresse()) ?>
+            </p>
+        </div>
+        <?php endif; ?>
+
+        <div class="bg-white rounded-lg shadow-md p-6 mb-6">
+            <h2 class="text-xl font-semibold mb-4">Mes comptes</h2>
+
+            <?php if (empty($comptes)): ?>
+            <p class="text-gray-600">Vous n'avez pas encore de compte.</p>
+            <?php else: ?>
+            <div class="overflow-x-auto">
+                <table class="min-w-full bg-white">
+                    <thead>
+                        <tr>
+                            <th class="py-2 px-4 border-b border-gray-200 bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Numéro
+                            </th>
+                            <th class="py-2 px-4 border-b border-gray-200 bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Type
+                            </th>
+                            <th class="py-2 px-4 border-b border-gray-200 bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Solde
+                            </th>
+                            <th class="py-2 px-4 border-b border-gray-200 bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions
+                            </th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <?php foreach ($comptes as $compte): ?>
+                        <tr>
+                            <td class="py-4 px-4 border-b border-gray-200"><?= htmlspecialchars($compte['telephone']) ?></td>
+                            <td class="py-4 px-4 border-b border-gray-200"><?= htmlspecialchars($compte['typecompte']) ?></td>
+                            <td class="py-4 px-4 border-b border-gray-200"><?= number_format($compte['solde'], 2, ',', ' ') ?> FCFA
+                            </td>
+                            <td class="py-4 px-4 border-b border-gray-200">
+                                <a href="/compte/<?= htmlspecialchars($compte['telephone']) ?>" class="text-blue-500 hover:text-blue-700">Détails</a>
+                            </td>
+                        </tr>
+                        <?php endforeach; ?>
+                    </tbody>
+                </table>
+            </div>
+            <?php endif; ?>
+        </div>
+
+        <!-- Section des 10 dernières transactions -->
+        <div class="bg-white rounded-lg shadow-md p-6">
+            <h2 class="text-xl font-semibold mb-4">Mes 10 dernières transactions</h2>
+
+            <?php if (empty($transactions)): ?>
+            <p class="text-gray-600">Aucune transaction récente.</p>
+            <?php else: ?>
+            <div class="overflow-x-auto">
+                <table class="min-w-full bg-white">
+                    <thead>
+                        <tr>
+                            <th class="py-2 px-4 border-b border-gray-200 bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date
+                            </th>
+                            <th class="py-2 px-4 border-b border-gray-200 bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Compte
+                            </th>
+                            <th class="py-2 px-4 border-b border-gray-200 bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Type
+                            </th>
+                            <th class="py-2 px-4 border-b border-gray-200 bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Montant
+                            </th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <?php foreach ($transactions as $transaction): ?>
+                        <tr>
+                            <td class="py-4 px-4 border-b border-gray-200">
+                                <?= $transaction->getFormattedDate() ?>
+                            </td>
+                            <td class="py-4 px-4 border-b border-gray-200">
+                                <?= htmlspecialchars($transaction->getCompteTelephone()) ?>
+                            </td>
+                            <td class="py-4 px-4 border-b border-gray-200">
+                                <?php
+                                $typeClass = '';
+                                switch ($transaction->getType()) {
+                                    case 'depot':
+                                        $typeClass = 'bg-green-100 text-green-800';
+                                        break;
+                                    case 'retrait':
+                                        $typeClass = 'bg-red-100 text-red-800';
+                                        break;
+                                    case 'transfert':
+                                        $typeClass = 'bg-blue-100 text-blue-800';
+                                        break;
+                                    default:
+                                        $typeClass = 'bg-gray-100 text-gray-800';
+                                }
+                                ?>
+                                <span class="px-2 py-1 rounded-full text-xs <?= $typeClass ?>">
+                                    <?= htmlspecialchars(ucfirst($transaction->getType())) ?>
+                                </span>
+                            </td>
+                            <td class="py-4 px-4 border-b border-gray-200">
+                                <?php
+                                $amountClass = $transaction->getType() === 'depot' ? 'text-green-600' : 'text-red-600';
+                                if ($transaction->getType() === 'transfert') {
+                                    $amountClass = 'text-blue-600';
+                                }
+                                ?>
+                                <span class="font-medium <?= $amountClass ?>">
+                                    <?= $transaction->getFormattedMontant() ?> FCFA
+                                </span>
+                            </td>
+                        </tr>
+                        <?php endforeach; ?>
+                    </tbody>
+                </table>
+            </div>
+            <?php endif; ?>
+        </div>
+    </div>
 </body>
 
 </html>

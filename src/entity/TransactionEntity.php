@@ -2,54 +2,55 @@
 
 namespace App\Entity;
 
-use App\Abstract\AbstractEntity;
-
-class TransactionEntity extends AbstractEntity
+class TransactionEntity
 {
-    protected ?int $id = null;
-    protected string $reference;
-    protected float $montant;
-    protected string $type;
-    protected string $dateTransaction;
-    protected int $compteId;
-    protected ?string $description = null;
+    private int $id;
+    private float $montant;
+    private string $compteTelephone;
+    private string $type;
+    private string $date;
     
-
-    public function toArray(): array
+    public function __construct(array $data)
     {
-        return [
-            'id' => $this->id,
-            'reference' => $this->reference,
-            'montant' => $this->montant,
-            'type' => $this->type,
-            'date_transaction' => $this->dateTransaction,
-            'compte_id' => $this->compteId,
-            'description' => $this->description
-        ];
+        $this->id = $data['id'];
+        $this->montant = $data['montant'];
+        $this->compteTelephone = $data['compte_telephone'];
+        $this->type = $data['type'];
+        $this->date = $data['date'];
     }
     
-
-    public static function toObject(array $data): self
+    public function getId(): int
     {
-        $transaction = new self();
-        
-        $mapping = [
-            'id' => 'id',
-            'reference' => 'reference',
-            'montant' => 'montant',
-            'type' => 'type',
-            'date_transaction' => 'dateTransaction',
-            'compte_id' => 'compteId',
-            'description' => 'description'
-        ];
-        
-        $transformedData = [];
-        foreach ($data as $key => $value) {
-            if (isset($mapping[$key])) {
-                $transformedData[$mapping[$key]] = $value;
-            }
-        }
-        
-        return $transaction->hydrate($transformedData);
+        return $this->id;
+    }
+    
+    public function getMontant(): float
+    {
+        return $this->montant;
+    }
+    
+    public function getCompteTelephone(): string
+    {
+        return $this->compteTelephone;
+    }
+    
+    public function getType(): string
+    {
+        return $this->type;
+    }
+    
+    public function getDate(): string
+    {
+        return $this->date;
+    }
+    
+    public function getFormattedDate(string $format = 'd/m/Y'): string
+    {
+        return date($format, strtotime($this->date));
+    }
+    
+    public function getFormattedMontant(string $separator = ' ', string $decimalSeparator = ','): string
+    {
+        return number_format($this->montant, 2, $decimalSeparator, $separator);
     }
 }

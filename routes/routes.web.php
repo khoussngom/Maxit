@@ -13,7 +13,7 @@ return $routes = [
         'action' => 'index',
         'method' => 'GET'
     ],
-    '/login/post' => [
+    '/login' => [
         'controller' => SecurityController::class,
         'action' => 'login',
         'method' => 'POST'
@@ -34,7 +34,7 @@ return $routes = [
         'action' => 'create',
         'method' => 'GET'
     ],
-    '/inscription/post' => [
+    '/inscription' => [
         'controller' => SecurityController::class,
         'action' => 'store',
         'method' => 'POST'
