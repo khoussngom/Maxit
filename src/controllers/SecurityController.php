@@ -2,231 +2,133 @@
 
 namespace App\Controllers;
 
-use App\Core\App;
 use App\Core\Upload;
 use App\Core\Validator;
-use Twilio\Rest\Client;
+use App\Services\SecurityService;
 use App\Abstract\AbstractController;
-use App\Middlewares\PasswordHashMiddleware;
 
 class SecurityController extends AbstractController
 {
+
+    private SecurityService $securityService;
+
     public function __construct()
     {
         parent::__construct();
+        $this->securityService = new SecurityService();
     }
 
     public function create(): void
     {
-        
-        $app = App::getInstance();
-        $session = $app->getDependency('session');
-        
-        $old = $session->get('old_input') ?? [];
-        $errors = $session->get('flash_errors') ?? [];
-        
-    
-        if (method_exists($session, 'set')) {
-            $session->set('old_input', null);
-            $session->set('flash_errors', null);
-        } else {
-
-            if (session_status() === PHP_SESSION_NONE) {
-                session_start();
-            }
-            unset($_SESSION['old_input'], $_SESSION['flash_errors']);
-        }
-        
-
-        $templatePath = dirname(__DIR__, 2) . '/templates/inscription.html.php';
-        
-
-        $this->renderHtml('inscription', [
-            'old' => $old,
-            'errors' => $errors
-        ]);
+        $this->renderHtml('inscription');
     }
 
     public function login()
     {
-        if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-            try {
-                $app = App::getInstance();
-                $securityService = $app->getDependency('security');
-                $session = $app->getDependency('session');
-                
-                $login = $_POST['login'] ?? '';
-                $password = $_POST['password'] ?? '';
-                
-                if (empty($login) || empty($password)) {
-
-                    $this->renderHtml('login', [
-                        'error' => 'Veuillez remplir tous les champs',
-                        'old' => ['login' => $login]
-                    ]);
-                    return;
-                }
-                
-                $personne = $securityService->seConnecter($login, $password);
-        
-                if ($personne) {
-                    $session->set('user', $personne);
-                    $session->set('user_id', $personne->getTelephone());
-                    $session->set('user_type', $personne->getTypePersonne());
-                    $session->set('logged_in', true);
-                    
-                    if ($personne->getTypePersonne() === 'admin') {
-                        header('Location: /admin');
-                    } else {
-                        header('Location: /accueil');
-                    }
-                    exit;
-                } else {
-
-                    $this->renderHtml('login', [
-                        'error' => 'Login ou mot de passe incorrect',
-                        'old' => ['login' => $login]
-                    ]);
-                }
-            } catch (\Exception $e) {
-
-                $this->renderHtml('login', [
-                    'error' => 'Une erreur est survenue. Veuillez réessayer plus tard.'
-                ]);
-            }
-        } else {
-
-            $this->renderHtml('login');
+        if (empty($_POST)) {
+            require dirname(__DIR__, 2) . '/templates/login.html.php';
+            return;
         }
+
+        $formData = [
+            'login' => trim($_POST['login'] ?? ''),
+            'password' => trim($_POST['password'] ?? '')
+        ];
+
+
+    
+        if ($formData['login'] === '') {
+
+            Validator::addError('login', 'Ce champ est obligatoire.');
+        }
+        if ($formData['password'] === '') {
+            Validator::addError('password', 'Ce champ est obligatoire.');
+        }
+
+        if (!Validator::isValid()) {
+            $this->session->set('flash_errors', Validator::getErrors());
+            $this->session->set('old_input', $formData);
+            require dirname(__DIR__, 2) . '/templates/login.html.php';
+            return;
+        }
+
+        $user = $this->securityService->seConnecter($formData['login'], $formData['password']);
+
+        if (!$user) {
+            Validator::addError('global', 'Login ou mot de passe incorrect.');
+            $this->session->set('flash_errors', Validator::getErrors());
+            $this->session->set('old_input', $formData);
+            require dirname(__DIR__, 2) . '/templates/login.html.php';
+            return;
+        }
+
+        $this->session->set('user', $user);
+        header('Location: ' . getenv('BASE_URL') . '/accueil');
+        exit;
     }
 
-    public function store(): void
+    public function store(): void 
     {
-        try {
-            $app = App::getInstance();
-            $session = $app->getDependency('session');
+        $formData = [
+            'login' => trim($_POST['login'] ?? ''),
+            'password' => trim($_POST['password'] ?? ''),
+            'prenom' => trim($_POST['prenom'] ?? ''),
+            'nom' => trim($_POST['nom'] ?? ''),
+            'adresse' => trim($_POST['adresse'] ?? ''),
+            'numero_identite' => trim($_POST['numeroIdentite'] ?? ''),
+            'telephone' => trim($_POST['telephone'] ?? ''),
+            'typePersonne' => 'client',
+            'photoRecto' => null,
+            'photoVerso' => null
+        ];
 
-            $errors = $this->validateInscription($_POST);
-            
-            if (!empty($errors)) {
+        
+        $photoRecto = Upload::save($_FILES['photorecto'] ?? null, 'uploads/cni');
+        $photoVerso = Upload::save($_FILES['photoverso'] ?? null, 'uploads/cni');
 
-                $session->set('flash_errors', $errors);
-                $session->set('old_input', $_POST);
-                
-
-                header('Location: /inscription');
-                exit;
-            }
-            
-
-            try {
-
-                unset($_POST['debug']);
-                
-
-                $_POST['numero_identite'] = $_POST['numeroIdentite'] ?? null;
-                unset($_POST['numeroIdentite']);
-                
-
-                $_POST['typePersonne'] = 'client';
-                
-
-                $data = \App\Middlewares\PasswordHashMiddleware::handle($_POST);
-                
-
-                if (isset($_FILES['photorecto']) && $_FILES['photorecto']['error'] === UPLOAD_ERR_OK) {
-                    $uploadDir = dirname(__DIR__, 2) . '/public/uploads/identity/';
-                    
-
-                    if (!file_exists($uploadDir)) {
-                        mkdir($uploadDir, 0777, true);
-                    }
-                    
-                    $fileName = uniqid() . '_' . basename($_FILES['photorecto']['name']);
-                    $uploadFile = $uploadDir . $fileName;
-                    
-                    if (move_uploaded_file($_FILES['photorecto']['tmp_name'], $uploadFile)) {
-                        $data['photoRecto'] = '/uploads/identity/' . $fileName;
-                    }
-                }
-                
-                if (isset($_FILES['photoverso']) && $_FILES['photoverso']['error'] === UPLOAD_ERR_OK) {
-                    $uploadDir = dirname(__DIR__, 2) . '/public/uploads/identity/';
-                    
-
-                    if (!file_exists($uploadDir)) {
-                        mkdir($uploadDir, 0777, true);
-                    }
-                    
-                    $fileName = uniqid() . '_' . basename($_FILES['photoverso']['name']);
-                    $uploadFile = $uploadDir . $fileName;
-                    
-                    if (move_uploaded_file($_FILES['photoverso']['tmp_name'], $uploadFile)) {
-                        $data['photoVerso'] = '/uploads/identity/' . $fileName;
-                    }
-                }
-                
-
-                $fieldsToExclude = ['debug', 'confirm_password'];
-                foreach ($fieldsToExclude as $field) {
-                    if (isset($data[$field])) {
-                        unset($data[$field]);
-                    }
-                }
-                                
-                $securityService = $app->getDependency('security');
-                $personneId = $securityService->inscrire($data, $app);
-                
-                if ($personneId) {
-                    $sid = TWILIO_SID;
-                    $token = TWILIO_TOKEN;
-                    $twilio = new Client($sid,$token);
-                    try 
-                    {
-                        $destinationNumber = $_POST['telephone'];
-                        if(substr($destinationNumber,0,4) !== '+221')
-                        {
-                            $destinationNumber = '+221' . ltrim($destinationNumber , '0');
-                        }
-                        $twilio->messages->create(
-                            $destinationNumber,
-                            [
-                                'from' => TWILIO_FROM,
-                                'body' => 'Votre compte a été créé avec succés !'
-                            ]
-                            );
-                    }catch(\Exception)
-                    {
-
-                    }
-                    $session->set('flash_success', 'Inscription réussie ! Vous pouvez maintenant vous connecter.');
-                    header('Location: /login');
-                    exit;
-                } else {
-
-                    $session->set('flash_errors', ['global' => 'Échec de l\'inscription. Veuillez réessayer.']);
-                    $session->set('old_input', $_POST);
-                    header('Location: /inscription');
-                    exit;
-                }
-            } catch (\InvalidArgumentException $e) {
-
-                $session->set('flash_errors', ['confirm_password' => $e->getMessage()]);
-                $session->set('old_input', $_POST);
-                header('Location: /inscription');
-                exit;
-            }
-        } catch (\Exception $e) {
-            
-            $app = App::getInstance();
-            $session = $app->getDependency('session');
-            
-            $session->set('flash_errors', ['global' => 'Une erreur est survenue. Veuillez réessayer plus tard.']);
-            $session->set('old_input', $_POST);
-            
-            header('Location: /inscription');
-            exit;
+        if (!$photoRecto) {
+            Validator::addError('photorecto', 'La photo recto de la CNI est obligatoire');
+        } else {
+            $formData['photoRecto'] = $photoRecto;
         }
+
+        if (!$photoVerso) {
+            Validator::addError('photoverso', 'La photo verso de la CNI est obligatoire');
+        } else {
+            $formData['photoVerso'] = $photoVerso;
+        }
+
+        if (empty($formData['login'])) {
+            Validator::addError('login', 'Le login est obligatoire');
+        }
+        if (empty($formData['password'])) {
+            Validator::addError('password', 'Le mot de passe est obligatoire');
+        }
+        if (empty($formData['telephone'])) {
+            Validator::addError('telephone', 'Le téléphone est obligatoire');
+        }
+        if (empty($formData['numero_identite'])) {
+            Validator::addError('numeroIdentite', 'Le numéro CNI est obligatoire');
+        }
+
+        if (!Validator::isValid()) {
+            $this->session->set('flash_errors', Validator::getErrors());
+            $this->session->set('old_input', $formData);
+            $this->renderHtml('inscription');
+            return;
+        }
+
+        
+
+        if ($this->securityService->inscrire($formData)) {
+            $this->session->set('flash_success', 'Inscription réussie !');
+            header('Location: ' . getenv('BASE_URL') . '/login');
+            exit();
+        }
+
+        $this->session->set('flash_errors', Validator::getErrors());
+        $this->session->set('old_input', $formData);
+        $this->renderHtml('inscription');
     }
 
     public function show():void {}
@@ -234,52 +136,22 @@ class SecurityController extends AbstractController
     public function update():void {}
 
     public function edit():void {}
-    
     public function destroy():void {}
 
-    public function index(): void
+    public function index():void
     {
-        if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-            $this->login();
-        } else {
-            $this->renderHtml('login');
-        }
+        $this->renderHtml('login');
     }
+
+    
 
     public function logout()
     {
-        $app = App::getInstance();
-        $session = $app->getDependency('session');
-        $session->destroy();
+        $this->session->destroy();
         header('Location: /');
-        exit;
     }
-    
-
-    private function validateInscription(array $data): array
+    public function inscription(): void
     {
-        $errors = [];
-        
-        $requiredFields = [
-            'login' => 'Le login est obligatoire',
-            'password' => 'Le mot de passe est obligatoire',
-            'prenom' => 'Le prénom est obligatoire',
-            'nom' => 'Le nom est obligatoire',
-            'telephone' => 'Le téléphone est obligatoire',
-            'adresse' => 'L\'adresse est obligatoire',
-            'numeroIdentite' => 'Le numéro d\'identité est obligatoire'
-        ];
-        
-        foreach ($requiredFields as $field => $message) {
-            if (empty($data[$field])) {
-                $errors[$field] = $message;
-            }
-        }
-        
-        if (!empty($data['telephone']) && !preg_match('/^\d{9,15}$/', $data['telephone'])) {
-            $errors['telephone'] = 'Le format du numéro de téléphone est invalide';
-        }
-        
-        return $errors;
+        require dirname(__DIR__, 2) . '/templates/inscription.html.php';
     }
 }
