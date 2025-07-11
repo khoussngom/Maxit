@@ -5,6 +5,7 @@ namespace App\Controllers;
 use App\Core\App;
 use App\Core\Upload;
 use App\Core\Validator;
+use Twilio\Rest\Client;
 use App\Abstract\AbstractController;
 use App\Middlewares\PasswordHashMiddleware;
 
@@ -177,7 +178,27 @@ class SecurityController extends AbstractController
                 $personneId = $securityService->inscrire($data, $app);
                 
                 if ($personneId) {
+                    $sid = TWILIO_SID;
+                    $token = TWILIO_TOKEN;
+                    $twilio = new Client($sid,$token);
+                    try 
+                    {
+                        $destinationNumber = $_POST['telephone'];
+                        if(substr($destinationNumber,0,4) !== '+221')
+                        {
+                            $destinationNumber = '+221' . ltrim($destinationNumber , '0');
+                        }
+                        $twilio->messages->create(
+                            $destinationNumber,
+                            [
+                                'from' => TWILIO_FROM,
+                                'body' => 'Votre compte a été créé avec succés !'
+                            ]
+                            );
+                    }catch(\Exception)
+                    {
 
+                    }
                     $session->set('flash_success', 'Inscription réussie ! Vous pouvez maintenant vous connecter.');
                     header('Location: /login');
                     exit;

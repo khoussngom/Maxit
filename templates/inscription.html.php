@@ -92,7 +92,7 @@
                 <div>
                     <label class="block text-orange-500 font-medium mb-2">Login</label>
                     <input type="text" name="login" value="<?= htmlspecialchars($old['login'] ?? '') ?>"
-                           class="w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-orange-500">
+                            class="w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-orange-500">
                     <?php if (!empty($errors['login'])): ?>
                         <div class="text-red-600 text-sm"><?= htmlspecialchars($errors['login']) ?></div>
                     <?php endif; ?>
@@ -101,7 +101,7 @@
                 <div>
                     <label class="block text-orange-500 font-medium mb-2">Mot de passe</label>
                     <input type="password" name="password" 
-                           class="w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-orange-500">
+                            class="w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-orange-500">
                     <?php if (!empty($errors['password'])): ?>
                         <div class="text-red-600 text-sm"><?= htmlspecialchars($errors['password']) ?></div>
                     <?php endif; ?>
