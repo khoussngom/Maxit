@@ -45,19 +45,21 @@ class TransactionRepository
                     WHERE c.personne_telephone = :personneTelephone
                     ORDER BY t.date DESC, t.id DESC
                     LIMIT :limit";
-            
+        
+            error_log("SQL transactions: $sql, personneTelephone: $personneTelephone, limit: $limit");
+        
             $stmt = $this->pdo->prepare($sql);
+            // $personneTelephone = '774730039';
             $stmt->bindParam(':personneTelephone', $personneTelephone);
             $stmt->bindParam(':limit', $limit, \PDO::PARAM_INT);
             $stmt->execute();
-            
-            $transactions = [];
-            while ($transaction = $stmt->fetch(\PDO::FETCH_ASSOC)) {
-                $transactions[] = new TransactionEntity($transaction);
-            }
-            
-            return $transactions;
+        
+            $result = $stmt->fetchAll(\PDO::FETCH_ASSOC);
+            error_log("Transactions trouvées: " . json_encode($result));
+
+            return $result;
         } catch (\PDOException $e) {
+            error_log("Erreur SQL dans findRecentByPersonne: " . $e->getMessage());
             return [];
         }
     }
