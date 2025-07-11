@@ -4,50 +4,69 @@ namespace App\Core;
 
 class Middleware
 {
+    private static array $ruleCheckers = [
+        'userNotLoggedIn' => 'checkUserNotLoggedIn',
+        'userTypeNotEqual' => 'checkUserTypeNotEqual'
+    ];
+
+    private static array $rules = [
+        'auth' => [
+            'condition' => 'userNotLoggedIn',
+            'redirect' => '/',
+            'message' => ''
+        ],
+        'isCommercial' => [
+            'condition' => 'userTypeNotEqual',
+            'value' => 'COMMERCIAL',
+            'statusCode' => 403,
+            'message' => 'Accès interdit : réservé aux commerciaux.'
+        ],
+        'isClient' => [
+            'condition' => 'userTypeNotEqual',
+            'value' => 'CLIENT',
+            'statusCode' => 403,
+            'message' => 'Accès interdit : réservé aux clients.'
+        ]
+    ];
+
     public static function handle(array $middlewares)
     {
+        $app = App::getInstance();
+        $session = $app->getDependency('session');
+        
         foreach ($middlewares as $middleware) {
-            switch ($middleware) {
-                case 'auth':
-                    self::auth();
-                    break;
-                case 'isCommercial':
-                    self::isCommercial();
-                    break;
-                case 'isClient':
-                    self::isClient();
-                    break;
+            if (isset(self::$rules[$middleware])) {
+                self::applyRule($middleware, $session);
             }
         }
     }
-    private static function auth()
+
+    private static function applyRule(string $rule, $session): void
     {
+        $ruleConfig = self::$rules[$rule];
+        $condition = $ruleConfig['condition'];
+        
+        if (isset(self::$ruleCheckers[$condition])) {
+            $checkMethod = self::$ruleCheckers[$condition];
+            self::$checkMethod($ruleConfig, $session);
+        }
+    }
     
-        if (session_status() === PHP_SESSION_NONE) {
-            session_start();
-        }
-
-
-        if (empty($_SESSION['user'])) {
-            header('Location: ' . getenv('BASE_URL') . '/login');
-            exit;
-        }
-    }
-    private static function isCommercial()
+    private static function checkUserNotLoggedIn(array $ruleConfig, $session): void
     {
-        if (empty($_SESSION['user']) || strtolower($_SESSION['user']['type']) !== 'commercial') {
-            http_response_code(403);
-            echo "Accès interdit : réservé aux commerciaux.";
+        if (!$session->isLoggedIn()) {
+            header('Location: ' . $ruleConfig['redirect']);
             exit;
         }
     }
-    private static function isClient()
+    
+    private static function checkUserTypeNotEqual(array $ruleConfig, $session): void
     {
-        if (empty($_SESSION['user']) || strtolower($_SESSION['user']['type']) !== 'client') {
-            http_response_code(403);
-            echo "Accès interdit : réservé aux clients.";
+        if (!$session->isLoggedIn() ||
+            strtoupper($session->getUserType()) !== $ruleConfig['value']) {
+            http_response_code($ruleConfig['statusCode']);
+            echo $ruleConfig['message'];
             exit;
         }
     }
-
 }

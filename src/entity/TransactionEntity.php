@@ -2,74 +2,54 @@
 
 namespace App\Entity;
 
-require_once __DIR__ . '/Enums.php';
+use App\Abstract\AbstractEntity;
 
-use DateTime;
-
-class Transaction
+class TransactionEntity extends AbstractEntity
 {
-    private float $montant;
-    private Compte $compte;
-    private string $type;
-    private DateTime $date;
+    protected ?int $id = null;
+    protected string $reference;
+    protected float $montant;
+    protected string $type;
+    protected string $dateTransaction;
+    protected int $compteId;
+    protected ?string $description = null;
+    
 
-    public function __construct(float $montant, Compte $compte, string $type)
+    public function toArray(): array
     {
-        if (!in_array($type, [TypeTransaction::DEPOT, TypeTransaction::RETRAIT, TypeTransaction::PAIEMENT])) {
-            throw new \InvalidArgumentException("Type de transaction invalide");
+        return [
+            'id' => $this->id,
+            'reference' => $this->reference,
+            'montant' => $this->montant,
+            'type' => $this->type,
+            'date_transaction' => $this->dateTransaction,
+            'compte_id' => $this->compteId,
+            'description' => $this->description
+        ];
+    }
+    
+
+    public static function toObject(array $data): self
+    {
+        $transaction = new self();
+        
+        $mapping = [
+            'id' => 'id',
+            'reference' => 'reference',
+            'montant' => 'montant',
+            'type' => 'type',
+            'date_transaction' => 'dateTransaction',
+            'compte_id' => 'compteId',
+            'description' => 'description'
+        ];
+        
+        $transformedData = [];
+        foreach ($data as $key => $value) {
+            if (isset($mapping[$key])) {
+                $transformedData[$mapping[$key]] = $value;
+            }
         }
-        $this->montant = $montant;
-        $this->compte = $compte;
-        $this->type = $type;
-        $this->date = new DateTime();
-    }
-
-    public function getCompte(): Compte
-    {
-        return $this->compte;
-    }
-
-    public function setCompte(Compte $compte): void
-    {
-        $this->compte = $compte;
-    }
-
-
-    public function getMontant()
-    {
-        return $this->montant;
-    }
-
-
-    public function setMontant($montant)
-    {
-        $this->montant = $montant;
-
-        return $this;
-    }
-
-
-    public function getType()
-    {
-        return $this->type;
-    }
-
-    public function setType($type)
-    {
-        $this->type = $type;
-
-        return $this;
-    }
-
-    public function getDate()
-    {
-        return $this->date;
-    }
-
-    public function setDate($date)
-    {
-        $this->date = $date;
-
-        return $this;
+        
+        return $transaction->hydrate($transformedData);
     }
 }

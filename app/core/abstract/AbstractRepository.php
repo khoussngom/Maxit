@@ -9,44 +9,66 @@ use App\Core\Database;
 abstract class AbstractRepository
 {
     protected PDO $pdo;
-
+    private static bool $isInitializing = false;
+    
     public function __construct()
     {
-        $this->pdo = Database::getInstance();
-    }
 
+        if (self::$isInitializing) {
+            error_log("Boucle d'initialisation détectée dans AbstractRepository");
+            throw new \RuntimeException("Boucle d'initialisation détectée");
+        }
+        
+        self::$isInitializing = true;
+        
+        try {
+            $this->pdo = Database::getInstance();
+            self::$isInitializing = false;
+        } catch (\Exception $e) {
+            self::$isInitializing = false;
+            error_log("Erreur lors de l'initialisation du repository : " . $e->getMessage());
+            throw new \RuntimeException("Erreur de connexion à la base de données. Veuillez réessayer plus tard.");
+        }
+    }
 
     public function findAll($table): array
     {
-        $sql = "SELECT * FROM {$table}";
-        $cursor = $this->pdo->prepare($sql);
-        $cursor->execute();
+        try {
+            $sql = "SELECT * FROM {$table}";
+            $cursor = $this->pdo->prepare($sql);
+            $cursor->execute();
 
-        return $cursor->fetchAll(PDO::FETCH_ASSOC);
+            return $cursor->fetchAll(PDO::FETCH_ASSOC);
+        } catch (PDOException $e) {
+            error_log("Erreur dans findAll : " . $e->getMessage());
+            return [];
+        }
     }
 
     public function findAllClause($clause, $table): array
     {
-        if (!$clause || empty($clause)) {
+        try {
+            if (!$clause || empty($clause)) {
+                return [];
+            }
+
+            $where = implode(' AND ', $clause);
+
+            $sql = "SELECT * FROM {$table} WHERE {$where}";
+
+            $cursor = $this->pdo->prepare($sql);
+            $cursor->execute();
+
+            return $cursor->fetchAll(PDO::FETCH_ASSOC);
+        } catch (PDOException $e) {
+            error_log("Erreur dans findAllClause : " . $e->getMessage());
             return [];
         }
-
-        $where = implode(' AND ', $clause);
-        $sql = "SELECT * FROM {table} WHERE {$where}";
-
-        $cursor = $this->pdo->prepare($sql);
-        $cursor->execute();
-
-        return $cursor->fetchAll(PDO::FETCH_ASSOC);
     }
 
-    public function insert(string $table, array $data): string
+    protected function insertOne(string $table, array $data): string
     {
-        if (!$data || empty($data)) {
-            return '';
-        }
-
-        $columns = implode(',', array_map(fn($key) => "\"$key\"", array_keys($data)));
+        $columns = implode(', ', array_map(fn($key) => "\"$key\"", array_keys($data)));
         $donnees = implode(',', array_map(fn($key) => ":$key", array_keys($data)));
 
         $sql = "INSERT INTO {$table} ({$columns}) VALUES ({$donnees}) RETURNING telephone";
@@ -64,26 +86,35 @@ abstract class AbstractRepository
         }
     }
     
-
     public function findById(string $table, string $telephone): ?array
     {
-        $sql = "SELECT * FROM {$table} WHERE telephone = :telephone";
-        $cursor = $this->pdo->prepare($sql);
-        $cursor->execute(['telephone' => $telephone]);
-        $result = $cursor->fetch(PDO::FETCH_ASSOC);
-        return $result ?: null;
+        try {
+            $sql = "SELECT * FROM {$table} WHERE telephone = :telephone";
+            $cursor = $this->pdo->prepare($sql);
+            $cursor->execute(['telephone' => $telephone]);
+            $result = $cursor->fetch(PDO::FETCH_ASSOC);
+            return $result ?: null;
+        } catch (PDOException $e) {
+            error_log("Erreur dans findById : " . $e->getMessage());
+            return null;
+        }
     }
     
     public function getTableColumns(string $table): array
     {
-        $sql = "SELECT column_name, data_type 
-                FROM information_schema.columns 
-                WHERE table_name = :table 
-                ORDER BY ordinal_position";
-        $cursor = $this->pdo->prepare($sql);
-        $cursor->execute(['table' => $table]);
+        try {
+            $sql = "SELECT column_name, data_type 
+                    FROM information_schema.columns 
+                    WHERE table_name = :table 
+                    ORDER BY ordinal_position";
+            $cursor = $this->pdo->prepare($sql);
+            $cursor->execute(['table' => $table]);
 
-        return $cursor->fetchAll(PDO::FETCH_ASSOC);
+            return $cursor->fetchAll(PDO::FETCH_ASSOC);
+        } catch (PDOException $e) {
+            error_log("Erreur dans getTableColumns : " . $e->getMessage());
+            return [];
+        }
     }
 }
 

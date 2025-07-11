@@ -1,200 +1,204 @@
 <?php
+
 namespace App\Entity;
 
 use App\Abstract\AbstractEntity;
 
-
-class PersonneEntity extends AbstractEntity
+class PersonneEntity extends AbstractEntity implements \Serializable
 {
-    private string $telephone;
-    private string $numeroIdentite;
-    private ?string $photorecto;
-    private ?string $photoverso;
-    private ?string $prenom;
-    private ?string $nom;
-    private ?string $adresse;
-    private string $typePersonne;
-    private ?string $login;
-    private ?string $password;
-    private array $comptes = [];
-
-    public function __construct(string $telephone, string $numeroIdentite, string $typePersonne)
+    protected ?int $id = null;
+    protected string $nom = '';
+    protected string $prenom = '';
+    protected string $telephone = '';
+    protected string $adresse = '';
+    protected string $typePersonne = 'client';
+    protected string $numeroIdentite = '';
+    protected string $login = '';
+    protected string $password = '';
+    protected ?string $photoRecto = null;
+    protected ?string $photoVerso = null;
+    
+    public function __construct(array $data = [])
     {
-        if (!in_array($typePersonne, [TypePersonne::CLIENT, TypePersonne::COMMERCIAL])) {
-            throw new \InvalidArgumentException("Type de personne invalide");
+        if (!empty($data)) {
+            $this->hydrate($data);
         }
-        $this->telephone = $telephone;
-        $this->numeroIdentite = $numeroIdentite;
-        $this->typePersonne = $typePersonne;
+    }
+    
+    /**
+     * Implémentation pour la sérialisation PHP < 7.4
+     */
+    public function serialize()
+    {
+        return serialize([
+            'id' => $this->id,
+            'nom' => $this->nom,
+            'prenom' => $this->prenom,
+            'telephone' => $this->telephone,
+            'adresse' => $this->adresse,
+            'typePersonne' => $this->typePersonne,
+            'numeroIdentite' => $this->numeroIdentite,
+            'login' => $this->login,
+            'password' => $this->password,
+            'photoRecto' => $this->photoRecto,
+            'photoVerso' => $this->photoVerso
+        ]);
+    }
+    
+
+    public function unserialize($serialized)
+    {
+        $data = unserialize($serialized);
+        $this->id = $data['id'] ?? null;
+        $this->nom = $data['nom'] ?? '';
+        $this->prenom = $data['prenom'] ?? '';
+        $this->telephone = $data['telephone'] ?? '';
+        $this->adresse = $data['adresse'] ?? '';
+        $this->typePersonne = $data['typePersonne'] ?? 'client';
+        $this->numeroIdentite = $data['numeroIdentite'] ?? '';
+        $this->login = $data['login'] ?? '';
+        $this->password = $data['password'] ?? '';
+        $this->photoRecto = $data['photoRecto'] ?? null;
+        $this->photoVerso = $data['photoVerso'] ?? null;
+    }
+    
+
+    public function __serialize(): array
+    {
+        return [
+            'id' => $this->id,
+            'nom' => $this->nom,
+            'prenom' => $this->prenom,
+            'telephone' => $this->telephone,
+            'adresse' => $this->adresse,
+            'typePersonne' => $this->typePersonne,
+            'numeroIdentite' => $this->numeroIdentite,
+            'login' => $this->login,
+            'password' => $this->password,
+            'photoRecto' => $this->photoRecto,
+            'photoVerso' => $this->photoVerso
+        ];
+    }
+    
+
+    public function __unserialize(array $data): void
+    {
+        $this->id = $data['id'] ?? null;
+        $this->nom = $data['nom'] ?? '';
+        $this->prenom = $data['prenom'] ?? '';
+        $this->telephone = $data['telephone'] ?? '';
+        $this->adresse = $data['adresse'] ?? '';
+        $this->typePersonne = $data['typePersonne'] ?? 'client';
+        $this->numeroIdentite = $data['numeroIdentite'] ?? '';
+        $this->login = $data['login'] ?? '';
+        $this->password = $data['password'] ?? '';
+        $this->photoRecto = $data['photoRecto'] ?? null;
+        $this->photoVerso = $data['photoVerso'] ?? null;
     }
 
-    public function addCompte(Compte $compte): void
+    public function toArray(): array
     {
-        $this->comptes[] = $compte;
-    }
-
-    public function getTypePersonne(): string
-    {
-        return $this->typePersonne;
-    }
-
-    public function setTypePersonne(string $type): void
-    {
-        $this->typePersonne = $type;
-    }
-
-
-    public function getTelephone()
-    {
-        return $this->telephone;
-    }
-
-
-    public function setTelephone($telephone)
-    {
-        $this->telephone = $telephone;
-
-        return $this;
-    }
-
-    public function getNumeroIdentite()
-    {
-        return $this->numeroIdentite;
-    }
-    public function setNumeroIdentite($numeroIdentite)
-    {
-        $this->numeroIdentite = $numeroIdentite;
-
-        return $this;
-    }
-
-    public function getPhotorecto()
-    {
-        return $this->photorecto;
-    }
-
-    public function setPhotorecto($photorecto)
-    {
-        $this->photorecto = $photorecto;
-
-        return $this;
-    }
-
-    public function getPhotoverso()
-    {
-        return $this->photoverso;
-    }
-
-    public function setPhotoverso($photoverso)
-    {
-        $this->photoverso = $photoverso;
-
-        return $this;
-    }
-
-
-    public function getPrenom()
-    {
-        return $this->prenom;
-    }
-
-    public function setPrenom($prenom)
-    {
-        $this->prenom = $prenom;
-
-        return $this;
-    }
-
-
-    public function getNom()
-    {
-        return $this->nom;
-    }
-
-    public function setNom($nom)
-    {
-        $this->nom = $nom;
-
-        return $this;
-    }
-
-
-    public function getAdresse()
-    {
-        return $this->adresse;
-    }
-
-    public function setAdresse($adresse)
-    {
-        $this->adresse = $adresse;
-
-        return $this;
-    }
-
-    public function getLogin()
-    {
-        return $this->login;
-    }
-
-
-    public function setLogin($login)
-    {
-        $this->login = $login;
-
-        return $this;
-    }
-
-    public function getPassword()
-    {
-        return $this->password;
-    }
-
-    public function setPassword($password)
-    {
-        $this->password = $password;
-
-        return $this;
+        return [
+            'id' => $this->id,
+            'nom' => $this->nom,
+            'prenom' => $this->prenom,
+            'telephone' => $this->telephone,
+            'adresse' => $this->adresse,
+            'type_personne' => $this->typePersonne,
+            'numero_identite' => $this->numeroIdentite,
+            'login' => $this->login,
+            'password' => $this->password,
+            'photo_recto' => $this->photoRecto,
+            'photo_verso' => $this->photoVerso
+        ];
     }
 
     public static function toObject(array $data): self
     {
-        if (
-            empty($data['telephone']) ||
-            empty($data['numero_identite']) ||
-            empty($data['typePersonne'])
-        ) {
-            throw new \InvalidArgumentException("Champs obligatoires manquants pour PersonneEntity::toObject");
-        }
-
-        $personne = new self(
-            $data['telephone'],
-            $data['numero_identite'],
-            $data['typePersonne']
-        );
-        $personne->setPhotorecto($data['photorecto'] ?? null);
-        $personne->setPhotoverso($data['photoverso'] ?? null);
-        $personne->setPrenom($data['prenom'] ?? null);
-        $personne->setNom($data['nom'] ?? null);
-        $personne->setAdresse($data['adresse'] ?? null);
-        $personne->setLogin($data['login'] ?? null);
-        $personne->setPassword($data['password'] ?? null);
-        return $personne;
-    }
-
-    public function toArray():array
-    {
-        return [
-            'telephone'      => $this->telephone ?? null,
-            'numero_identite' => $this->numeroIdentite ?? null,
-            'photorecto'     => $this->photorecto ?? null,
-            'photoverso'     => $this->photoverso ?? null,
-            'prenom'         => $this->prenom ?? null,
-            'nom'            => $this->nom ?? null,
-            'adresse'        => $this->adresse ?? null,
-            'typePersonne'   => $this->typePersonne ?? null,
-            'login'          => $this->login ?? null,
-            'password'       => $this->password ?? null,
-            'comptes'     => $this->comptes ?? [],
+        $personne = new self();
+        
+        $mapping = [
+            'id' => 'id',
+            'nom' => 'nom',
+            'prenom' => 'prenom',
+            'telephone' => 'telephone',
+            'adresse' => 'adresse',
+            'type_personne' => 'typePersonne',
+            'numero_identite' => 'numeroIdentite',
+            'login' => 'login',
+            'password' => 'password',
+            'photo_recto' => 'photoRecto',
+            'photo_verso' => 'photoVerso'
         ];
+        
+        $transformedData = [];
+        foreach ($data as $key => $value) {
+            if (isset($mapping[$key])) {
+                $transformedData[$mapping[$key]] = $value;
+            }
+        }
+        
+        return $personne->hydrate($transformedData);
+    }
+    
+    // Getters et setters
+    public function getId(): ?int
+    {
+        return $this->id;
+    }
+    
+    public function getNom(): string
+    {
+        return $this->nom;
+    }
+    
+    public function setNom(string $nom): self
+    {
+        $this->nom = $nom;
+        return $this;
+    }
+    
+    public function getPrenom(): string
+    {
+        return $this->prenom;
+    }
+    
+    public function setPrenom(string $prenom): self
+    {
+        $this->prenom = $prenom;
+        return $this;
+    }
+    
+    public function getTelephone(): string
+    {
+        return $this->telephone;
+    }
+    
+    public function setTelephone(string $telephone): self
+    {
+        $this->telephone = $telephone;
+        return $this;
+    }
+    
+    public function getAdresse(): string
+    {
+        return $this->adresse;
+    }
+    
+    public function setAdresse(string $adresse): self
+    {
+        $this->adresse = $adresse;
+        return $this;
+    }
+    
+    public function getTypePersonne(): string
+    {
+        return $this->typePersonne;
+    }
+    
+    public function setTypePersonne(string $typePersonne): self
+    {
+        $this->typePersonne = $typePersonne;
+        return $this;
     }
 }

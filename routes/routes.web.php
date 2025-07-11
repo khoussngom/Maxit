@@ -5,27 +5,38 @@ use App\Controllers\SecurityController;
 return $routes = [
     '/' => [
         'controller' => SecurityController::class,
-        'action' => 'index'
+        'action' => 'index',
+        'method' => 'GET'
     ],
     '/login' => [
         'controller' => SecurityController::class,
-        'action' => 'login'
+        'action' => 'index',
+        'method' => 'GET'
+    ],
+    '/login/post' => [
+        'controller' => SecurityController::class,
+        'action' => 'login',
+        'method' => 'POST'
     ],
     '/logout' => [
         'controller' => SecurityController::class,
-        'action' => 'logout'
+        'action' => 'logout',
+        'method' => 'GET'
     ],
     '/accueil' => [
         'controller' => AcceuilController::class,
         'middlewares' => ['auth'],
-        'action' => 'index'
+        'action' => 'index',
+        'method' => 'GET'
     ],
     '/inscription' => [
         'controller' => SecurityController::class,
-        'action' => 'store'
+        'action' => 'create',
+        'method' => 'GET'
     ],
-    // '/accueil' => [
-    //     'controller' => AcceuilController::class,
-    //     'action' => 'index'
-    // ]
+    '/inscription/post' => [
+        'controller' => SecurityController::class,
+        'action' => 'store',
+        'method' => 'POST'
+    ]
 ];

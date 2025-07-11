@@ -1,11 +1,15 @@
 <?php
 namespace App\Middlewares;
+
+use App\Core\Session;
+
+
 class Auth
 {
     public function __invoke()
     {
-        session_start();
-        if (empty($_SESSION['user'])) {
+        Session::getInstance();
+        if (empty(Session->get('user'))) {
             header('Location: /login');
             exit;
         }

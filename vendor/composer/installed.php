@@ -3,7 +3,7 @@
         'name' => 'dialibatoul-marakhib/maxit',
         'pretty_version' => 'dev-main',
         'version' => 'dev-main',
-        'reference' => '18214b660990fa76fba45a3ec47cef15605a77d8',
+        'reference' => '96ab6e46b3b0c8bc3dfdf2404d4abc9fd6bd5499',
         'type' => 'library',
         'install_path' => __DIR__ . '/../../',
         'aliases' => array(),
@@ -13,7 +13,7 @@
         'dialibatoul-marakhib/maxit' => array(
             'pretty_version' => 'dev-main',
             'version' => 'dev-main',
-            'reference' => '18214b660990fa76fba45a3ec47cef15605a77d8',
+            'reference' => '96ab6e46b3b0c8bc3dfdf2404d4abc9fd6bd5499',
             'type' => 'library',
             'install_path' => __DIR__ . '/../../',
             'aliases' => array(),
