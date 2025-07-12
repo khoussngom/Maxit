@@ -24,11 +24,10 @@ abstract class AbstractController{
 
     public function renderHtml(string $view, $data = [])
     {
-        $layoutPath = dirname(__DIR__, 3) . '/templates/layout/partials/sidebar.layout.php';
-        require_once $layoutPath;
+        // Ne pas inclure systématiquement le sidebar, il est déjà inclus dans les templates
         extract($data);
         ob_start();
-    require_once dirname(__DIR__, 3) . '/templates/' . $view . '.html.php';
+        require_once dirname(__DIR__, 3) . '/templates/' . $view . '.html.php';
         $contentForLayout = ob_get_clean();
         echo $contentForLayout;
     }

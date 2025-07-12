@@ -8,12 +8,12 @@ return $routes = [
         'action' => 'index',
         'method' => 'GET'
     ],
-    '/login' => [
+    'GET:/login' => [
         'controller' => SecurityController::class,
         'action' => 'index',
         'method' => 'GET'
     ],
-    '/login' => [
+    'POST:/login' => [
         'controller' => SecurityController::class,
         'action' => 'login',
         'method' => 'POST'
@@ -29,12 +29,18 @@ return $routes = [
         'action' => 'index',
         'method' => 'GET'
     ],
-    '/inscription' => [
+    '/transactions' => [
+        'controller' => AcceuilController::class,
+        'middlewares' => ['auth'],
+        'action' => 'transactions',
+        'method' => 'GET'
+    ],
+    'GET:/inscription' => [
         'controller' => SecurityController::class,
         'action' => 'create',
         'method' => 'GET'
     ],
-    '/inscription' => [
+    'POST:/inscription' => [
         'controller' => SecurityController::class,
         'action' => 'store',
         'method' => 'POST',

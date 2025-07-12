@@ -38,7 +38,13 @@
             <div class="bg-gray-900 rounded-xl p-4 mb-4">
                 <div class="flex justify-between items-center text-white">
                     <span class="text-orange-500 text-xl font-semibold">Type</span>
-                    <span class="text-orange-500 text-xl font-semibold">Montant</span>
+                    <div class="flex items-center space-x-4">
+                        <a href="/transactions" class="text-orange-400 hover:text-orange-300 text-sm font-medium flex items-center">
+                            <span>Voir plus</span>
+                            <i class='bx bx-chevron-right ml-1'></i>
+                        </a>
+                        <span class="text-orange-500 text-xl font-semibold">Montant</span>
+                    </div>
                 </div>
             </div>
 

@@ -37,12 +37,41 @@ class Router
         
         $routes = static::loadRoutes();
         
-        if (isset($routes[$uri])) {
-            $route = $routes[$uri];
+        // Vérifier d'abord si la route existe avec le préfixe de méthode
+        $methodPrefixedRoute = "$method:$uri";
+        if (isset($routes[$methodPrefixedRoute])) {
+            $route = $routes[$methodPrefixedRoute];
             $controllerClass = $route['controller'];
             $action = $route['action'];
             
-            error_log("Route trouvée: $controllerClass@$action");
+            error_log("Route trouvée avec préfixe de méthode: $controllerClass@$action");
+            
+            if (isset($route['middlewares']) && is_array($route['middlewares'])) {
+                foreach ($route['middlewares'] as $middleware) {
+                    self::applyMiddleware($middleware);
+                }
+            }
+            
+            $controllerInstance = new $controllerClass();
+            return $controllerInstance->$action();
+        }
+        
+        // Si non trouvée avec préfixe, essayer sans préfixe
+        if (isset($routes[$uri])) {
+            $route = $routes[$uri];
+            
+            // Vérifier si la méthode correspond
+            if (isset($route['method']) && $route['method'] !== $method) {
+                error_log("Méthode HTTP non autorisée: $method pour la route $uri");
+                header('HTTP/1.1 405 Method Not Allowed');
+                echo '405 Method Not Allowed';
+                return;
+            }
+            
+            $controllerClass = $route['controller'];
+            $action = $route['action'];
+            
+            error_log("Route trouvée sans préfixe: $controllerClass@$action");
             
             if (isset($route['middlewares']) && is_array($route['middlewares'])) {
                 foreach ($route['middlewares'] as $middleware) {
