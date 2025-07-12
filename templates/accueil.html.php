@@ -45,14 +45,11 @@
 
             <div class="space-y-3">
                 <?php 
-                // Vérifier si nous avons des transactions
                 if (!empty($transactions)): 
-                    // Limiter à 10 transactions maximum
                     $count = 0;
                     foreach ($transactions as $transaction):
-                        if ($count >= 6) break; // Arrêter après 6 transactions
+                        if ($count >= 10) break; 
                         
-                        // Définir les classes CSS en fonction du type de transaction
                         $typeClass = $transaction['type'] === 'depot' ? 'text-cyan-500' : 'text-orange-500';
                         $borderClass = $transaction['type'] === 'depot' ? 'border-gray-200' : 'border-orange-200';
                 ?>
