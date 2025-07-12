@@ -20,7 +20,6 @@
                     <div class="flex items-center space-x-3">
                         <span class="text-orange-500 text-xl font-semibold">Solde:</span>
                         <div class="flex items-center space-x-2">
-                            <!-- Utilise le solde du premier compte ou 0 si aucun compte n'existe -->
                             <span class="text-white text-xl">
                                 <?= !empty($comptes) ? number_format($comptes[0]['solde'], 0, ',', ' ') : '0' ?> FCFA
                             </span>
@@ -73,7 +72,6 @@
                     endforeach;
                 else:
                 ?>
-                    <!-- Si aucune transaction n'est disponible, afficher un message -->
                     <div class="bg-white rounded-xl p-4 border-2 border-gray-200">
                         <div class="flex justify-between items-center">
                             <span class="text-gray-500 font-semibold">Aucune transaction récente</span>

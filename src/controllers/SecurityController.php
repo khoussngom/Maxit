@@ -99,113 +99,71 @@ class SecurityController extends AbstractController
         }
     }
 
-    public function store(): void
+    public function store(): void 
     {
-        try {
-            $app = App::getInstance();
-            $session = $app->getDependency('session');
+        $formData = [
+            'login' => trim($_POST['login'] ?? ''),
+            'password' => trim($_POST['password'] ?? ''),
+            'prenom' => trim($_POST['prenom'] ?? ''),
+            'nom' => trim($_POST['nom'] ?? ''),
+            'adresse' => trim($_POST['adresse'] ?? ''),
+            'numero_identite' => trim($_POST['numeroIdentite'] ?? ''),
+            'telephone' => trim($_POST['telephone'] ?? ''),
+            'typePersonne' => 'client',
+            'photoRecto' => null,
+            'photoVerso' => null
+        ];
 
-            $errors = $this->validateInscription($_POST);
-            
-            if (!empty($errors)) {
+        
+        $photoRecto = Upload::save($_FILES['photorecto'] ?? null, 'uploads/cni');
+        $photoVerso = Upload::save($_FILES['photoverso'] ?? null, 'uploads/cni');
 
-                $session->set('flash_errors', $errors);
-                $session->set('old_input', $_POST);
-                
-
-                header('Location: /inscription');
-                exit;
-            }
-            
-
-            try {
-
-                unset($_POST['debug']);
-                
-
-                $_POST['numero_identite'] = $_POST['numeroIdentite'] ?? null;
-                unset($_POST['numeroIdentite']);
-                
-
-                $_POST['typePersonne'] = 'client';
-                
-
-                $data = \App\Middlewares\PasswordHashMiddleware::handle($_POST);
-                
-
-                if (isset($_FILES['photorecto']) && $_FILES['photorecto']['error'] === UPLOAD_ERR_OK) {
-                    $uploadDir = dirname(__DIR__, 2) . '/public/uploads/identity/';
-                    
-
-                    if (!file_exists($uploadDir)) {
-                        mkdir($uploadDir, 0777, true);
-                    }
-                    
-                    $fileName = uniqid() . '_' . basename($_FILES['photorecto']['name']);
-                    $uploadFile = $uploadDir . $fileName;
-                    
-                    if (move_uploaded_file($_FILES['photorecto']['tmp_name'], $uploadFile)) {
-                        $data['photoRecto'] = '/uploads/identity/' . $fileName;
-                    }
-                }
-                
-                if (isset($_FILES['photoverso']) && $_FILES['photoverso']['error'] === UPLOAD_ERR_OK) {
-                    $uploadDir = dirname(__DIR__, 2) . '/public/uploads/identity/';
-                    
-
-                    if (!file_exists($uploadDir)) {
-                        mkdir($uploadDir, 0777, true);
-                    }
-                    
-                    $fileName = uniqid() . '_' . basename($_FILES['photoverso']['name']);
-                    $uploadFile = $uploadDir . $fileName;
-                    
-                    if (move_uploaded_file($_FILES['photoverso']['tmp_name'], $uploadFile)) {
-                        $data['photoVerso'] = '/uploads/identity/' . $fileName;
-                    }
-                }
-                
-
-                $fieldsToExclude = ['debug', 'confirm_password'];
-                foreach ($fieldsToExclude as $field) {
-                    if (isset($data[$field])) {
-                        unset($data[$field]);
-                    }
-                }
-                                
-                $securityService = $app->getDependency('security');
-                $personneId = $securityService->inscrire($data, $app);
-                
-                if ($personneId) {
-
-                    $session->set('flash_success', 'Inscription réussie ! Vous pouvez maintenant vous connecter.');
-                    header('Location: /login');
-                    exit;
-                } else {
-
-                    $session->set('flash_errors', ['global' => 'Échec de l\'inscription. Veuillez réessayer.']);
-                    $session->set('old_input', $_POST);
-                    header('Location: /inscription');
-                    exit;
-                }
-            } catch (\InvalidArgumentException $e) {
-
-                $session->set('flash_errors', ['confirm_password' => $e->getMessage()]);
-                $session->set('old_input', $_POST);
-                header('Location: /inscription');
-                exit;
-            }
-        } catch (\Exception $e) {
-            
-            $app = App::getInstance();
-            $session = $app->getDependency('session');
-            
-            $session->set('flash_errors', ['global' => 'Une erreur est survenue. Veuillez réessayer plus tard.']);
-            $session->set('old_input', $_POST);
-            
-            header('Location: /inscription');
-            exit;
+        if (!$photoRecto) {
+            Validator::addError('photorecto', 'La photo recto de la CNI est obligatoire');
+        } else {
+            $formData['photoRecto'] = $photoRecto;
         }
+
+        if (!$photoVerso) {
+            Validator::addError('photoverso', 'La photo verso de la CNI est obligatoire');
+        } else {
+            $formData['photoVerso'] = $photoVerso;
+        }
+
+        if (empty($formData['login'])) {
+            Validator::addError('login', 'Le login est obligatoire');
+        }
+        if (empty($formData['password'])) {
+            Validator::addError('password', 'Le mot de passe est obligatoire');
+        }
+        if (empty($formData['telephone'])) {
+            Validator::addError('telephone', 'Le téléphone est obligatoire');
+        }
+        if (empty($formData['numero_identite'])) {
+            Validator::addError('numeroIdentite', 'Le numéro CNI est obligatoire');
+        }
+
+        if (!Validator::isValid()) {
+            $this->session->set('flash_errors', Validator::getErrors());
+            $this->session->set('old_input', $formData);
+            $this->renderHtml('inscription');
+            return;
+        }
+
+        $app = App::getInstance();
+        $securityService = $app->getDependency('security');
+
+        // $formData = PasswordHashMiddleware::handle($formData);
+
+        if ($securityService->inscrire($formData)) {
+            $this->session->set('flash_success', 'Inscription réussie !');
+            header('Location: ' . getenv('BASE_URL') . '/login');
+            exit();
+        }
+
+        $this->session->set('flash_errors', Validator::getErrors());
+        $this->session->set('old_input', $formData);
+        $this->renderHtml('inscription');
     }
 
     public function show():void {}
