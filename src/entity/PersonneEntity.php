@@ -25,9 +25,7 @@ class PersonneEntity extends AbstractEntity implements \Serializable
         }
     }
     
-    /**
-     * Implémentation pour la sérialisation PHP < 7.4
-     */
+
     public function serialize()
     {
         return serialize([

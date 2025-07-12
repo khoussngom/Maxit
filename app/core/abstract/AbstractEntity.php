@@ -50,7 +50,7 @@ abstract class AbstractEntity
         return property_exists($this, $name) && $this->$name !== null;
     }
 
- 
+
     abstract public function toArray(): array;
 
     abstract public static function toObject(array $data);
