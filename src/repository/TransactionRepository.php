@@ -40,7 +40,7 @@ class TransactionRepository
     public function findRecentByPersonne($personneTelephone, int $limit = 10): array
     {
         try {
-            // S'assurer que personneTelephone est bien une chaîne de caractères
+
             $personneTelephone = (string) $personneTelephone;
             
             $sql = "SELECT t.* FROM transactions t
@@ -91,7 +91,7 @@ class TransactionRepository
             }
             
             if (!empty($filters['date'])) {
-                // Filtrer sur la partie date seulement (sans l'heure) en utilisant la fonction date()
+
                 $sql .= " AND DATE(t.date) = :date";
                 $params['date'] = $filters['date'];
             }

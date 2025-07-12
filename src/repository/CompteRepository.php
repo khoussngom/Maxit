@@ -8,16 +8,11 @@ use App\Abstract\AbstractRepository;
 
 class CompteRepository extends AbstractRepository
 {
-    /**
-     * Récupère les comptes associés à une personne
-     * 
-     * @param string $personneId ID (téléphone) de la personne
-     * @return array Liste des comptes associés à la personne
-     */
+
     public function findByPersonne($personneId): array
     {
         try {
-            // S'assurer que personneId est bien une chaîne de caractères
+
             $personneId = (string) $personneId;
             
             error_log("Recherche des comptes pour la personne avec ID/téléphone: " . $personneId);
