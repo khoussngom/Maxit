@@ -22,45 +22,81 @@ class SecurityController extends AbstractController
 
     public function create(): void
     {
-        $this->renderHtml('inscription');
+        // Réinitialiser le validateur pour éviter les erreurs résiduelles à l'affichage initial
+        Validator::reset();
+        
+        // Récupérer les anciennes valeurs et erreurs s'il y en a
+        $old = $this->session->get('old_input') ?? [];
+        $errors = $this->session->get('flash_errors') ?? [];
+        
+        // Vider les valeurs en session après les avoir récupérées
+        $this->session->set('old_input', null);
+        $this->session->set('flash_errors', null);
+        
+        // Afficher le formulaire avec les données et erreurs récupérées
+        $this->renderHtml('inscription', [
+            'old' => $old,
+            'errors' => $errors
+        ]);
     }
 
     public function login()
     {
-        if (empty($_POST)) {
-            require dirname(__DIR__, 2) . '/templates/login.html.php';
+        // Si ce n'est pas une soumission de formulaire, afficher simplement le formulaire
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            // Récupérer les anciennes valeurs et erreurs s'il y en a
+            $old = $this->session->get('old_input') ?? [];
+            $errors = $this->session->get('flash_errors') ?? [];
+            
+            // Vider les valeurs en session après les avoir récupérées
+            $this->session->set('old_input', null);
+            $this->session->set('flash_errors', null);
+            
+            // Afficher le formulaire avec les données et erreurs récupérées
+            $this->renderHtml('login', [
+                'old' => $old,
+                'errors' => $errors
+            ]);
             return;
         }
 
+        // Réinitialiser le validateur
+        Validator::reset();
+        
         $formData = [
             'login' => trim($_POST['login'] ?? ''),
             'password' => trim($_POST['password'] ?? '')
         ];
-
-
-    
-        if ($formData['login'] === '') {
-
-            Validator::addError('login', 'Ce champ est obligatoire.');
+        
+        // Validation des champs
+        if (empty($formData['login'])) {
+            Validator::addError('login', 'Le login est obligatoire');
         }
-        if ($formData['password'] === '') {
-            Validator::addError('password', 'Ce champ est obligatoire.');
+        
+        if (empty($formData['password'])) {
+            Validator::addError('password', 'Le mot de passe est obligatoire');
         }
 
         if (!Validator::isValid()) {
             $this->session->set('flash_errors', Validator::getErrors());
             $this->session->set('old_input', $formData);
-            require dirname(__DIR__, 2) . '/templates/login.html.php';
+            $this->renderHtml('login', [
+                'old' => $formData,
+                'errors' => Validator::getErrors()
+            ]);
             return;
         }
 
         $user = $this->securityService->seConnecter($formData['login'], $formData['password']);
 
         if (!$user) {
-            Validator::addError('global', 'Login ou mot de passe incorrect.');
+            Validator::addError('global', 'Login ou mot de passe incorrect');
             $this->session->set('flash_errors', Validator::getErrors());
             $this->session->set('old_input', $formData);
-            require dirname(__DIR__, 2) . '/templates/login.html.php';
+            $this->renderHtml('login', [
+                'old' => $formData,
+                'errors' => Validator::getErrors()
+            ]);
             return;
         }
 
@@ -71,6 +107,15 @@ class SecurityController extends AbstractController
 
     public function store(): void 
     {
+        // Si ce n'est pas une soumission de formulaire, rediriger vers la page d'inscription
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            $this->renderHtml('inscription');
+            return;
+        }
+        
+        // Réinitialiser le validateur pour éviter les erreurs résiduelles
+        Validator::reset();
+        
         $formData = [
             'login' => trim($_POST['login'] ?? ''),
             'password' => trim($_POST['password'] ?? ''),
@@ -83,37 +128,57 @@ class SecurityController extends AbstractController
             'photoRecto' => null,
             'photoVerso' => null
         ];
-
         
+        // Validation des champs obligatoires uniquement lors de la soumission du formulaire
+        if (empty($formData['login'])) {
+            Validator::addError('login', 'Le login est obligatoire');
+        }
+        
+        if (empty($formData['password'])) {
+            Validator::addError('password', 'Le mot de passe est obligatoire');
+        }
+        
+        if (empty($formData['prenom'])) {
+            Validator::addError('prenom', 'Le prénom est obligatoire');
+        }
+        
+        if (empty($formData['nom'])) {
+            Validator::addError('nom', 'Le nom est obligatoire');
+        }
+        
+        if (empty($formData['adresse'])) {
+            Validator::addError('adresse', 'L\'adresse est obligatoire');
+        }
+        
+        if (empty($formData['numero_identite'])) {
+            Validator::addError('numeroIdentite', 'Le numéro CNI est obligatoire');
+        }
+        
+        if (empty($formData['telephone'])) {
+            Validator::addError('telephone', 'Le téléphone est obligatoire');
+        } elseif (!preg_match('/^\d{9,15}$/', $formData['telephone'])) {
+            Validator::addError('telephone', 'Format de téléphone invalide');
+        }
+        
+        // Validation des photos
         $photoRecto = Upload::save($_FILES['photorecto'] ?? null, 'uploads/cni');
         $photoVerso = Upload::save($_FILES['photoverso'] ?? null, 'uploads/cni');
-
+        
         if (!$photoRecto) {
             Validator::addError('photorecto', 'La photo recto de la CNI est obligatoire');
         } else {
             $formData['photoRecto'] = $photoRecto;
         }
-
+        
         if (!$photoVerso) {
             Validator::addError('photoverso', 'La photo verso de la CNI est obligatoire');
         } else {
             $formData['photoVerso'] = $photoVerso;
         }
-
-        if (empty($formData['login'])) {
-            Validator::addError('login', 'Le login est obligatoire');
-        }
-        if (empty($formData['password'])) {
-            Validator::addError('password', 'Le mot de passe est obligatoire');
-        }
-        if (empty($formData['telephone'])) {
-            Validator::addError('telephone', 'Le téléphone est obligatoire');
-        }
-        if (empty($formData['numero_identite'])) {
-            Validator::addError('numeroIdentite', 'Le numéro CNI est obligatoire');
-        }
-
+        
+        // Vérification des validations
         if (!Validator::isValid()) {
+            // Stockage des erreurs et des données en session
             $this->session->set('flash_errors', Validator::getErrors());
             $this->session->set('old_input', $formData);
             $this->renderHtml('inscription');
@@ -155,6 +220,10 @@ class SecurityController extends AbstractController
 
     public function index():void
     {
+        // Réinitialiser le validateur pour éviter les erreurs résiduelles à l'affichage initial
+        Validator::reset();
+        
+        // Afficher simplement le formulaire de login sans erreurs
         $this->renderHtml('login');
     }
 
@@ -164,9 +233,5 @@ class SecurityController extends AbstractController
     {
         $this->session->destroy();
         header('Location: /');
-    }
-    public function inscription(): void
-    {
-        require dirname(__DIR__, 2) . '/templates/inscription.html.php';
     }
 }

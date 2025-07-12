@@ -71,6 +71,11 @@ class Validator {
         self::$errors = [];
     }
 
+    public static function reset(): void
+    {
+        self::$errors = [];
+    }
+
     public static function validate(string $rule, string $field, $value, array $params = [], ?string $message = null): bool {
         if (empty(self::$validationRules)) {
             self::init();

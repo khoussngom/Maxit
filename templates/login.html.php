@@ -38,13 +38,13 @@
                 <form method="POST" action="/login" class="space-y-6">
                     <div>
                         <label class="block text-sm font-medium text-gray-600 mb-2">Numéro de téléphone ou Login</label>
-                        <input type="text" name="login" value="<?= htmlspecialchars($old['login'] ?? '') ?>" 
+                        <input type="text"  placeholder="login"name="login" value="<?= htmlspecialchars($old['login'] ?? '') ?>" 
                                class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent hover:border-orange-500 transition-colors duration-200">
                     </div>
 
                     <div>
                         <label class="block text-sm font-medium text-gray-600 mb-2">Mot de Passe</label>
-                        <input type="password" name="password" 
+                        <input placeholder="Mot de passe" type="password" name="password" 
                                class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent hover:border-orange-500 transition-colors duration-200">
                     </div>
 
