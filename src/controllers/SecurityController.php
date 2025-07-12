@@ -37,7 +37,7 @@ class SecurityController extends AbstractController
         $this->renderHtml('inscription', [
             'old' => $old,
             'errors' => $errors
-        ]);
+            ]);
     }
 
     public function login()
@@ -87,22 +87,42 @@ class SecurityController extends AbstractController
             return;
         }
 
-        $user = $this->securityService->seConnecter($formData['login'], $formData['password']);
+        try {
+            $user = $this->securityService->seConnecter($formData['login'], $formData['password']);
+            
+            if (!$user) {
+                Validator::addError('global', 'Login ou mot de passe incorrect');
+                $this->session->set('flash_errors', Validator::getErrors());
+                $this->session->set('old_input', $formData);
+                $this->renderHtml('login', [
+                    'old' => $formData,
+                    'errors' => Validator::getErrors()
+                ]);
+                return;
+            }
 
-        if (!$user) {
-            Validator::addError('global', 'Login ou mot de passe incorrect');
+            // Connexion réussie, stocker l'utilisateur en session
+            $this->session->set('user', $user);
+            $this->session->set('user_id', $user->getTelephone()); // Utiliser le téléphone comme identifiant
+            $this->session->set('logged_in', true);
+            
+            // Assurer que la redirection fonctionne même si BASE_URL n'est pas défini
+            $baseUrl = getenv('BASE_URL') ?: '';
+            header('Location: ' . $baseUrl . '/accueil');
+            exit;
+            
+        } catch (\Exception $e) {
+            // En cas d'erreur technique, afficher un message d'erreur général
+            error_log('Erreur lors de la connexion: ' . $e->getMessage());
+            Validator::addError('global', 'Une erreur est survenue lors de la connexion. Veuillez réessayer.');
             $this->session->set('flash_errors', Validator::getErrors());
             $this->session->set('old_input', $formData);
             $this->renderHtml('login', [
-                'old' => $formData,
+                'old' => $formData, 
                 'errors' => Validator::getErrors()
             ]);
             return;
         }
-
-        $this->session->set('user', $user);
-        header('Location: ' . getenv('BASE_URL') . '/accueil');
-        exit;
     }
 
     public function store(): void 

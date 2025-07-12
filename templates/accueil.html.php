@@ -10,7 +10,7 @@
 </head>
 
 <body class="bg-gray-100">
-    <?php include 'sidebar.php'; ?>
+    <?php include __DIR__ . '/layout/partials/sidebar.layout.php'; ?>
 
     <div class="ml-16 p-6">
         <div class="max-w-4xl mx-auto">

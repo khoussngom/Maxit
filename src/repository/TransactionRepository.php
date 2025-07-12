@@ -37,9 +37,12 @@ class TransactionRepository
         }
     }
     
-    public function findRecentByPersonne(string $personneTelephone, int $limit = 10): array
+    public function findRecentByPersonne($personneTelephone, int $limit = 10): array
     {
         try {
+            // S'assurer que personneTelephone est bien une chaîne de caractères
+            $personneTelephone = (string) $personneTelephone;
+            
             $sql = "SELECT t.* FROM transactions t
                     JOIN compte c ON t.compte_telephone = c.telephone
                     WHERE c.personne_telephone = :personneTelephone
@@ -49,17 +52,21 @@ class TransactionRepository
             error_log("SQL transactions: $sql, personneTelephone: $personneTelephone, limit: $limit");
         
             $stmt = $this->pdo->prepare($sql);
-            // $personneTelephone = '774730039';
-            $stmt->bindParam(':personneTelephone', $personneTelephone);
+            $stmt->bindParam(':personneTelephone', $personneTelephone, \PDO::PARAM_STR);
             $stmt->bindParam(':limit', $limit, \PDO::PARAM_INT);
             $stmt->execute();
         
             $result = $stmt->fetchAll(\PDO::FETCH_ASSOC);
-            error_log("Transactions trouvées: " . json_encode($result));
+            error_log("Transactions trouvées: " . count($result));
+            
+            if (count($result) === 0) {
+                error_log("Aucune transaction trouvée pour le téléphone: $personneTelephone");
+            }
 
             return $result;
         } catch (\PDOException $e) {
             error_log("Erreur SQL dans findRecentByPersonne: " . $e->getMessage());
+            error_log("Stack trace: " . $e->getTraceAsString());
             return [];
         }
     }

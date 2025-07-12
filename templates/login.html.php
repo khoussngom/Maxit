@@ -28,10 +28,29 @@
                         <?= htmlspecialchars($success) ?>
                     </div>
                 <?php endif; ?>
-
+                
                 <?php if (isset($error) && $error): ?>
                     <div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative mb-4">
                         <?= htmlspecialchars($error) ?>
+                    </div>
+                <?php endif; ?>
+
+                <!-- Affichage des erreurs de validation -->
+                <?php if (isset($errors) && is_array($errors) && !empty($errors)): ?>
+                    <div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative mb-4">
+                        <?php if (isset($errors['global'])): ?>
+                            <p><?= htmlspecialchars($errors['global']) ?></p>
+                        <?php endif; ?>
+                        
+                        <?php if (count($errors) > (isset($errors['global']) ? 1 : 0)): ?>
+                            <ul class="list-disc ml-5">
+                                <?php foreach ($errors as $field => $message): ?>
+                                    <?php if ($field !== 'global'): ?>
+                                        <li><?= htmlspecialchars($message) ?></li>
+                                    <?php endif; ?>
+                                <?php endforeach; ?>
+                            </ul>
+                        <?php endif; ?>
                     </div>
                 <?php endif; ?>
 

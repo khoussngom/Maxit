@@ -14,14 +14,22 @@ class CompteRepository extends AbstractRepository
      * @param string $personneId ID (téléphone) de la personne
      * @return array Liste des comptes associés à la personne
      */
-    public function findByPersonne(string $personneId): array
+    public function findByPersonne($personneId): array
     {
         try {
+            // S'assurer que personneId est bien une chaîne de caractères
+            $personneId = (string) $personneId;
+            
+            error_log("Recherche des comptes pour la personne avec ID/téléphone: " . $personneId);
+            
             $sql = 'SELECT * FROM compte WHERE "personne_telephone" = :personneId';
             $stmt = $this->pdo->prepare($sql);
             $stmt->execute(['personneId' => $personneId]);
             
-            return $stmt->fetchAll(\PDO::FETCH_ASSOC);
+            $results = $stmt->fetchAll(\PDO::FETCH_ASSOC);
+            error_log("Nombre de comptes trouvés: " . count($results));
+            
+            return $results;
         } catch (\PDOException $e) {
             error_log("Erreur lors de la récupération des comptes : " . $e->getMessage());
             return [];
