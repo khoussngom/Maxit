@@ -23,7 +23,6 @@ class AcceuilController extends AbstractController
             $compteRepository = $app->getDependency('compteRepository');
             $transactionRepository = $app->getDependency('transactionRepository');
             
-            // Debug pour voir ce qu'est réellement $transactionRepository
             error_log('Type de transactionRepository: ' . gettype($transactionRepository));
             if (is_object($transactionRepository)) {
                 error_log('Classe de transactionRepository: ' . get_class($transactionRepository));
@@ -32,13 +31,20 @@ class AcceuilController extends AbstractController
             $telephone = $session->get('user_id');
             $comptes = $compteRepository->findByPersonne($telephone);
             
-            // Récupérer les 10 dernières transactions
-            $transactions = $transactionRepository->findRecentByPersonne($telephone, 10);
+            error_log('Nombre de comptes trouvés: ' . count($comptes));
+            
+            $transactions = [];
+            try {
+                $transactions = $transactionRepository->findRecentByPersonne($telephone, 10);
+                error_log('Nombre de transactions trouvées: ' . count($transactions));
+            } catch (\Exception $e) {
+                error_log('Erreur lors de la récupération des transactions: ' . $e->getMessage());
+            }
             
             $this->renderHtml('accueil', [
                 'user' => $user,
                 'comptes' => $comptes ?? [],
-                'transactions' => $transactions ?? []
+                'transactions' => $transactions
             ]);
         } catch (\Exception $e) {
             error_log("Erreur dans AcceuilController::index : " . $e->getMessage());
@@ -50,7 +56,6 @@ class AcceuilController extends AbstractController
         }
     }
     
-    // Implémentation des méthodes abstraites requises
     public function create(): void {}
     public function store(): void {}
     public function update(): void {}
