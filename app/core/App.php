@@ -4,13 +4,14 @@ namespace App\Core;
 use App\Core\Upload;
 use App\Core\Session;
 use App\Core\Database;
+use App\Services\EnvoyerMessage;
 use App\Services\SecurityService;
 use App\Repository\CompteRepository;
 use App\Repository\PersonneRepository;
 
 class App
 {
-    private static ?App $instance = null;
+    private static ?\App\Core\App $instance = null;
     private array $dependencies = [];
     private bool $isInitializingDependencies = false;
     
@@ -19,10 +20,10 @@ class App
         $this->initDependencies();
     }
     
-    public static function getInstance(): App
+    public static function getInstance(): \App\Core\App
     {
         if (self::$instance === null) {
-            self::$instance = new App();
+            self::$instance = new \App\Core\App();
         }
         return self::$instance;
     }
@@ -48,6 +49,8 @@ class App
             
 
             $this->dependencies['session'] = Session::getInstance();
+
+            $this->dependencies['envoyerMessage'] = EnvoyerMessage::getInstance();
             
 
             if (isset($this->dependencies['db'])) {

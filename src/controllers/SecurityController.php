@@ -2,8 +2,10 @@
 
 namespace App\Controllers;
 
+use App\Core\App;
 use App\Core\Upload;
 use App\Core\Validator;
+use App\Services\EnvoyerMessage;
 use App\Services\SecurityService;
 use App\Abstract\AbstractController;
 
@@ -121,9 +123,19 @@ class SecurityController extends AbstractController
         $app = App::getInstance();
         $securityService = $app->getDependency('security');
 
-        // $formData = PasswordHashMiddleware::handle($formData);
 
         if ($securityService->inscrire($formData)) {
+            try {
+                EnvoyerMessage::envoyerConfirmationInscription(
+                    $formData['telephone'],
+                    $formData['nom'],
+                    $formData['prenom']
+                );
+                error_log("SMS de confirmation d'inscription envoyé à " . $formData['telephone']);
+            } catch (\Exception $e) {
+                error_log("Erreur lors de l'envoi du SMS de confirmation: " . $e->getMessage());
+            }
+            
             $this->session->set('flash_success', 'Inscription réussie !');
             header('Location: ' . getenv('BASE_URL') . '/login');
             exit();
