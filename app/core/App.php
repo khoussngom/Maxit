@@ -1,6 +1,9 @@
 <?php
 namespace App\Core;
 
+use App\Core\Upload;
+use App\Core\Session;
+use App\Core\Database;
 use App\Services\SecurityService;
 use App\Repository\CompteRepository;
 use App\Repository\PersonneRepository;
@@ -60,11 +63,17 @@ class App
 
             if (isset($this->dependencies['personneRepository'])) {
                 try {
-                    $this->dependencies['security'] = new SecurityService();
+                    $this->dependencies['security'] = new SecurityService(
+                        $this->dependencies['personneRepository'],
+                        $this->dependencies['db']
+                    );
                 } catch (\Exception $e) {
                     error_log("Erreur d'initialisation du service de sécurité: " . $e->getMessage());
                 }
             }
+            
+
+            $this->dependencies['upload'] = new Upload();
             
 
             error_log("Dépendances initialisées: " . implode(', ', array_keys($this->dependencies)));

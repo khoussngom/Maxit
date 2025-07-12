@@ -35,6 +35,11 @@ class Middleware
         $session = $app->getDependency('session');
         
         foreach ($middlewares as $middleware) {
+            if ($middleware === 'PasswordHashMiddleware') {
+                \App\Middlewares\PasswordHashMiddleware::handle($_POST);
+                continue;
+            }
+
             if (isset(self::$rules[$middleware])) {
                 self::applyRule($middleware, $session);
             }

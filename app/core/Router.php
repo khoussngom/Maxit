@@ -8,9 +8,7 @@ class Router
 {
     protected static $routes;
     
-    /**
-     * Charge les routes depuis le fichier routes.web.php
-     */
+
     public static function loadRoutes()
     {
         if (static::$routes === null) {
@@ -37,7 +35,6 @@ class Router
         
         error_log("Résolution de route: $method $uri");
         
-        // Charger les routes depuis le fichier externe
         $routes = static::loadRoutes();
         
         if (isset($routes[$uri])) {
@@ -47,7 +44,6 @@ class Router
             
             error_log("Route trouvée: $controllerClass@$action");
             
-            // Vérifier et appliquer les middlewares
             if (isset($route['middlewares']) && is_array($route['middlewares'])) {
                 foreach ($route['middlewares'] as $middleware) {
                     self::applyMiddleware($middleware);
@@ -63,12 +59,7 @@ class Router
         echo '404 Not Found';
     }
     
-    /**
-     * Applique un middleware spécifique
-     * 
-     * @param string $middlewareName Nom du middleware à appliquer
-     * @return void
-     */
+
     protected static function applyMiddleware($middlewareName)
     {
         $app = App::getInstance();
@@ -76,7 +67,6 @@ class Router
         
         switch ($middlewareName) {
             case 'auth':
-                // Vérifier si l'utilisateur est connecté
                 if (!$session->get('logged_in')) {
                     error_log("Middleware auth: Utilisateur non connecté, redirection vers /login");
                     header('Location: /login');
@@ -85,7 +75,6 @@ class Router
                 break;
                 
             case 'admin':
-                // Vérifier si l'utilisateur est un administrateur
                 if (!$session->get('logged_in') || $session->get('user_type') !== 'admin') {
                     error_log("Middleware admin: Accès non autorisé, redirection vers /");
                     header('Location: /');
@@ -93,7 +82,14 @@ class Router
                 }
                 break;
                 
-            // Ajoutez d'autres middlewares selon vos besoins
+            case 'PasswordHashMiddleware':
+                error_log("Application du middleware PasswordHashMiddleware");
+                if ($_SERVER['REQUEST_METHOD'] === 'POST' && !empty($_POST['password'])) {
+                    $_POST = \App\Middlewares\PasswordHashMiddleware::handle($_POST);
+                    error_log("Mot de passe traité par le middleware");
+                }
+                break;
+                
         }
     }
 }

@@ -37,6 +37,7 @@ return $routes = [
     '/inscription' => [
         'controller' => SecurityController::class,
         'action' => 'store',
-        'method' => 'POST'
+        'method' => 'POST',
+        'middlewares' => ['PasswordHashMiddleware']
     ]
 ];

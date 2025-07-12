@@ -118,9 +118,12 @@ class SecurityController extends AbstractController
             return;
         }
 
-        
+        $app = App::getInstance();
+        $securityService = $app->getDependency('security');
 
-        if ($this->securityService->inscrire($formData)) {
+        // $formData = PasswordHashMiddleware::handle($formData);
+
+        if ($securityService->inscrire($formData)) {
             $this->session->set('flash_success', 'Inscription réussie !');
             header('Location: ' . getenv('BASE_URL') . '/login');
             exit();

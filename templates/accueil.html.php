@@ -20,7 +20,6 @@
                     <div class="flex items-center space-x-3">
                         <span class="text-orange-500 text-xl font-semibold">Solde:</span>
                         <div class="flex items-center space-x-2">
-                            <!-- Utilise le solde du premier compte ou 0 si aucun compte n'existe -->
                             <span class="text-white text-xl">
                                 <?= !empty($comptes) ? number_format($comptes[0]['solde'], 0, ',', ' ') : '0' ?> FCFA
                             </span>
@@ -45,14 +44,11 @@
 
             <div class="space-y-3">
                 <?php 
-                // Vérifier si nous avons des transactions
                 if (!empty($transactions)): 
-                    // Limiter à 10 transactions maximum
                     $count = 0;
                     foreach ($transactions as $transaction):
-                        if ($count >= 6) break; // Arrêter après 6 transactions
+                        if ($count >= 10) break; 
                         
-                        // Définir les classes CSS en fonction du type de transaction
                         $typeClass = $transaction['type'] === 'depot' ? 'text-cyan-500' : 'text-orange-500';
                         $borderClass = $transaction['type'] === 'depot' ? 'border-gray-200' : 'border-orange-200';
                 ?>
@@ -76,7 +72,6 @@
                     endforeach;
                 else:
                 ?>
-                    <!-- Si aucune transaction n'est disponible, afficher un message -->
                     <div class="bg-white rounded-xl p-4 border-2 border-gray-200">
                         <div class="flex justify-between items-center">
                             <span class="text-gray-500 font-semibold">Aucune transaction récente</span>
