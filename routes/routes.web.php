@@ -75,5 +75,17 @@ return $routes = [
         'action' => 'store',
         'method' => 'POST',
         'middlewares' => ['PasswordHashMiddleware']
-    ]
+    ],
+    'GET:/comptes/change-principal' => [
+        'controller' => AcceuilController::class,
+        'middlewares' => ['auth'],
+        'action' => 'changeComptePrincipal',
+        'method' => 'GET'
+    ],
+    'POST:/comptes/change-principal/store' => [
+        'controller' => AcceuilController::class,
+        'middlewares' => ['auth'],
+        'action' => 'storeChangeComptePrincipal',
+        'method' => 'POST'
+    ],
 ];

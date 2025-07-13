@@ -558,4 +558,123 @@ class AcceuilController extends AbstractController
             exit;
         }
     }
+    
+    public function changeComptePrincipal(): void
+    {
+        try {
+            $app = App::getInstance();
+            $session = $app->getDependency('session');
+            
+            $user = $session->get('user');
+            if (!$user) {
+                header('Location: /login');
+                exit;
+            }
+            
+            $telephone = $session->get('user_id');
+            if (!$telephone && $user && method_exists($user, 'getTelephone')) {
+                $telephone = $user->getTelephone();
+                if ($telephone) {
+                    $session->set('user_id', $telephone);
+                }
+            }
+            
+            if (empty($telephone)) {
+                error_log('Erreur: Téléphone utilisateur non trouvé dans la session ou l\'objet utilisateur');
+                header('Location: /login');
+                exit;
+            }
+            
+            $compteService = $app->getDependency('compteService');
+            $comptePrincipal = $compteService->getComptePrincipal($telephone);
+            $comptesSecondaires = $compteService->getComptesSecondaires($telephone);
+            
+            $compteId = isset($_GET['id']) ? $_GET['id'] : null;
+            $compteSelectionne = null;
+            
+            if ($compteId) {
+                foreach ($comptesSecondaires as $compte) {
+                    if ($compte['telephone'] === $compteId) {
+                        $compteSelectionne = $compte;
+                        break;
+                    }
+                }
+            }
+            
+            if (!$compteSelectionne && !empty($comptesSecondaires)) {
+                $compteSelectionne = $comptesSecondaires[0];
+            }
+            
+            $success = $session->getFlash('success');
+            $error = $session->getFlash('error');
+            
+            $this->renderHtml('change-compte-principal', [
+                'user' => $user,
+                'comptePrincipal' => $comptePrincipal,
+                'comptesSecondaires' => $comptesSecondaires,
+                'compteSelectionne' => $compteSelectionne,
+                'success' => $success,
+                'error' => $error
+            ]);
+        } catch (\Exception $e) {
+            error_log("Erreur dans AcceuilController::changeComptePrincipal : " . $e->getMessage());
+            error_log("Trace: " . $e->getTraceAsString());
+            
+            $this->renderHtml('error', [
+                'message' => 'Une erreur est survenue lors du chargement de la page de changement de compte principal.'
+            ]);
+        }
+    }
+
+    public function storeChangeComptePrincipal(): void
+    {
+        try {
+            $app = App::getInstance();
+            $session = $app->getDependency('session');
+            
+            $user = $session->get('user');
+            if (!$user) {
+                header('Location: /login');
+                exit;
+            }
+            
+            $telephone = $session->get('user_id');
+            if (!$telephone && $user && method_exists($user, 'getTelephone')) {
+                $telephone = $user->getTelephone();
+                if ($telephone) {
+                    $session->set('user_id', $telephone);
+                }
+            }
+            
+            if (empty($_POST['compte_id']) || empty($telephone)) {
+                $session->setFlash('error', 'Paramètres invalides pour le changement de compte principal.');
+                header('Location: /comptes');
+                exit;
+            }
+            
+            $compteSecondaireId = $_POST['compte_id'];
+            
+            $compteService = $app->getDependency('compteService');
+            $result = $compteService->changeCompteToPrincipal($telephone, $compteSecondaireId);
+            
+            if ($result) {
+                $session->setFlash('success', 'Le compte a été défini comme compte principal avec succès.');
+            } else {
+                $session->setFlash('error', 'Une erreur est survenue lors du changement de compte principal.');
+            }
+            
+            header('Location: /comptes');
+            exit;
+        } catch (\Exception $e) {
+            error_log("Erreur dans AcceuilController::storeChangeComptePrincipal : " . $e->getMessage());
+            error_log("Trace: " . $e->getTraceAsString());
+            
+            $app = App::getInstance();
+            $session = $app->getDependency('session');
+            $session->setFlash('error', 'Une erreur est survenue lors du changement de compte principal.');
+            
+            header('Location: /comptes');
+            exit;
+        }
+    }
 }

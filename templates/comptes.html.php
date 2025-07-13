@@ -73,6 +73,14 @@
                                 <p class="text-lg font-bold text-orange-500">
                                     <?= number_format($compte['solde'], 2, ',', ' ') ?> XOF
                                 </p>
+                                <div class="mt-3 flex justify-end">
+                                    <form action="/comptes/change-principal/store" method="post">
+                                        <input type="hidden" name="compte_id" value="<?= htmlspecialchars($compte['telephone']) ?>">
+                                        <button type="submit" class="inline-flex items-center px-3 py-1 text-xs border border-transparent font-medium rounded-md text-white bg-blue-500 hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+                                            <i class="bx bx-check-shield mr-1"></i> Définir comme principal
+                                        </button>
+                                    </form>
+                                </div>
                             </div>
                         </div>
                     <?php endforeach; ?>

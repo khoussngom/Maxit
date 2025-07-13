@@ -116,6 +116,42 @@ abstract class AbstractRepository
             return [];
         }
     }
+
+
+    public function beginTransaction(): bool
+    {
+        try {
+            error_log("Démarrage d'une transaction");
+            return $this->pdo->beginTransaction();
+        } catch (\PDOException $e) {
+            error_log("Erreur lors du démarrage de la transaction : " . $e->getMessage());
+            return false;
+        }
+    }
+
+
+    public function commit(): bool
+    {
+        try {
+            error_log("Validation d'une transaction");
+            return $this->pdo->commit();
+        } catch (\PDOException $e) {
+            error_log("Erreur lors de la validation de la transaction : " . $e->getMessage());
+            return false;
+        }
+    }
+
+
+    public function rollBack(): bool
+    {
+        try {
+            error_log("Annulation d'une transaction");
+            return $this->pdo->rollBack();
+        } catch (\PDOException $e) {
+            error_log("Erreur lors de l'annulation de la transaction : " . $e->getMessage());
+            return false;
+        }
+    }
 }
 
 

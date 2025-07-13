@@ -159,4 +159,59 @@ class CompteService
             return false;
         }
     }
+
+    
+    public function changeCompteToPrincipal(string $personneTelephone, string $compteSecondaireTelephone): bool
+    {
+        try {
+            error_log("Tentative de changement du compte $compteSecondaireTelephone en compte principal pour $personneTelephone");
+            
+            $compteSecondaire = $this->compteRepository->findByTelephone($compteSecondaireTelephone);
+            
+            if (!$compteSecondaire || $compteSecondaire['personne_telephone'] !== $personneTelephone) {
+                error_log("Le compte secondaire n'existe pas ou n'appartient pas à cette personne");
+                return false;
+            }
+            
+            if (!isset($compteSecondaire['typecompte']) || $compteSecondaire['typecompte'] !== 'secondaire') {
+                error_log("Le compte n'est pas un compte secondaire");
+                return false;
+            }
+            
+            $comptePrincipal = $this->getComptePrincipal($personneTelephone);
+            if (!$comptePrincipal) {
+                error_log("Aucun compte principal trouvé pour la personne $personneTelephone");
+                return false;
+            }
+            
+            $this->compteRepository->beginTransaction();
+            
+            try {
+
+                $successDemotion = $this->compteRepository->updateTypeCompte($comptePrincipal['telephone'], 'secondaire');
+                if (!$successDemotion) {
+                    throw new \Exception("Impossible de changer l'ancien compte principal en secondaire");
+                }
+                
+
+                $successPromotion = $this->compteRepository->updateTypeCompte($compteSecondaireTelephone, 'principal');
+                if (!$successPromotion) {
+                    throw new \Exception("Impossible de changer le compte secondaire en principal");
+                }
+                
+
+                $this->compteRepository->commit();
+                error_log("Changement du compte principal réussi");
+                return true;
+            } catch (\Exception $e) {
+
+                $this->compteRepository->rollBack();
+                error_log("Erreur lors du changement de compte principal : " . $e->getMessage());
+                return false;
+            }
+        } catch (\Exception $e) {
+            error_log("Erreur lors du changement de compte principal : " . $e->getMessage());
+            return false;
+        }
+    }
 }

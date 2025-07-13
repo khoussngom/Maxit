@@ -124,4 +124,26 @@ class CompteRepository extends AbstractRepository
             return false;
         }
     }
+    
+    public function updateTypeCompte(string $telephone, string $nouveauType): bool
+    {
+        try {
+            error_log("Tentative de mise à jour du type de compte $telephone vers $nouveauType");
+            
+            $sql = 'UPDATE compte SET "typecompte" = :typecompte WHERE "telephone" = :telephone';
+            $stmt = $this->pdo->prepare($sql);
+            $stmt->execute([
+                'telephone' => $telephone,
+                'typecompte' => $nouveauType
+            ]);
+            
+            $success = $stmt->rowCount() > 0;
+            error_log($success ? "Type de compte mis à jour avec succès" : "Échec de la mise à jour du type de compte");
+            
+            return $success;
+        } catch (\PDOException $e) {
+            error_log("Erreur lors de la mise à jour du type de compte : " . $e->getMessage());
+            return false;
+        }
+    }
 }
