@@ -35,6 +35,36 @@ return $routes = [
         'action' => 'transactions',
         'method' => 'GET'
     ],
+    '/comptes' => [
+        'controller' => AcceuilController::class,
+        'middlewares' => ['auth'],
+        'action' => 'comptes',
+        'method' => 'GET'
+    ],
+    'GET:/comptes/secondaire/create' => [
+        'controller' => AcceuilController::class,
+        'middlewares' => ['auth'],
+        'action' => 'createCompteSecondaire',
+        'method' => 'GET'
+    ],
+    'POST:/comptes/secondaire/store' => [
+        'controller' => AcceuilController::class,
+        'middlewares' => ['auth'],
+        'action' => 'storeCompteSecondaire',
+        'method' => 'POST'
+    ],
+    'GET:/transactions/create' => [
+        'controller' => AcceuilController::class,
+        'middlewares' => ['auth'],
+        'action' => 'createTransaction',
+        'method' => 'GET'
+    ],
+    'POST:/transactions/store' => [
+        'controller' => AcceuilController::class,
+        'middlewares' => ['auth'],
+        'action' => 'storeTransaction',
+        'method' => 'POST'
+    ],
     'GET:/inscription' => [
         'controller' => SecurityController::class,
         'action' => 'create',

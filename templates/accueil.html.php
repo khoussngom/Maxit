@@ -15,6 +15,18 @@
     <div class="ml-16 p-6">
         <div class="max-w-4xl mx-auto">
 
+            <?php if (isset($success) && !empty($success)) : ?>
+                <div class="bg-green-100 border-l-4 border-green-500 text-green-700 p-4 mb-4" role="alert">
+                    <p><?= htmlspecialchars($success) ?></p>
+                </div>
+            <?php endif; ?>
+            
+            <?php if (isset($error) && !empty($error)) : ?>
+                <div class="bg-red-100 border-l-4 border-red-500 text-red-700 p-4 mb-4" role="alert">
+                    <p><?= htmlspecialchars($error) ?></p>
+                </div>
+            <?php endif; ?>
+            
             <div class="bg-gray-900 rounded-xl p-6 mb-6 text-white">
                 <div class="flex items-center justify-between">
                     <div class="flex items-center space-x-3">
@@ -27,10 +39,9 @@
                         </div>
                     </div>
                     <div class="flex items-center space-x-3">
-                        <span class="text-orange-500 text-xl font-semibold">changer compte:</span>
-                        <div class="flex items-center space-x-2">
-                            <i class='bx bx-dollar-circle text-orange-500'></i>
-                        </div>
+                        <a href="/transactions/create" class="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-white bg-orange-500 hover:bg-orange-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-orange-500">
+                            <i class='bx bx-plus mr-2'></i> Nouvelle transaction
+                        </a>
                     </div>
                 </div>
             </div>

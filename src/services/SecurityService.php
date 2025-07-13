@@ -66,13 +66,14 @@ class SecurityService
                 $types = ['principal', 'secondaire'];
                 
                 try {
-                    $stmt = $this->db->query("SELECT unnest(enum_range(NULL::type_compte)) AS type");
+
+                    $stmt = $this->db->query("SELECT unnest(enum_range(NULL::typecompte)) AS type");
                     $availableTypes = $stmt->fetchAll(\PDO::FETCH_COLUMN);
                     if (!empty($availableTypes)) {
                         $types = $availableTypes;
                     }
                 } catch (\PDOException $e) {
-                    error_log("Impossible de récupérer les types de compte: " . $e->getMessage());
+                    error_log("Impossible de récupérer les types de compte: " . $e->getMessage() . " - Utilisation des valeurs par défaut");
                 }
                 
                 $compteData = [
@@ -81,6 +82,8 @@ class SecurityService
                     'personne_telephone' => $personneTelephone,
                     'typecompte' => $types[0]
                 ];
+                
+                error_log("Création d'un compte avec les données: " . json_encode($compteData));
                 
                 $compteRepository = $app->getDependency('compteRepository');
                 $compteTelephone = $compteRepository->create($compteData);

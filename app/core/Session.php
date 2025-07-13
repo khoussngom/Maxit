@@ -130,4 +130,45 @@ class Session
             session_regenerate_id(true);
         }
     }
+
+    public function setFlash(string $key, $value): void
+    {
+        $this->startSessionSafely();
+        
+        if (!isset($_SESSION['flash'])) {
+            $_SESSION['flash'] = [];
+        }
+        
+        $_SESSION['flash'][$key] = $value;
+    }
+
+    public function getFlash(string $key, $default = null)
+    {
+        $this->startSessionSafely();
+        
+        $value = $default;
+        
+        if (isset($_SESSION['flash'][$key])) {
+            $value = $_SESSION['flash'][$key];
+            unset($_SESSION['flash'][$key]);
+        }
+        
+        return $value;
+    }
+    
+
+    
+    public function hasFlash(string $key): bool
+    {
+        $this->startSessionSafely();
+        return isset($_SESSION['flash'][$key]);
+    }
+    
+
+    
+    public function clearFlash(): void
+    {
+        $this->startSessionSafely();
+        unset($_SESSION['flash']);
+    }
 }

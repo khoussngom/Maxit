@@ -4,16 +4,20 @@ namespace App\Core;
 use App\Core\Upload;
 use App\Core\Session;
 use App\Core\Database;
+use App\Services\CompteService;
 use App\Services\EnvoyerMessage;
 use App\Services\SecurityService;
 use App\Repository\CompteRepository;
+use App\Services\TransactionService;
 use App\Repository\PersonneRepository;
+use App\Repository\TransactionRepository;
 
 class App
 {
     private static ?\App\Core\App $instance = null;
     private array $dependencies = [];
     private bool $isInitializingDependencies = false;
+    private array $initQueue = [];
     
     private function __construct()
     {
@@ -30,7 +34,6 @@ class App
     
     private function initDependencies(): void
     {
-
         if ($this->isInitializingDependencies) {
             return;
         }
@@ -38,48 +41,76 @@ class App
         $this->isInitializingDependencies = true;
         
         try {
-
+        
+            
             try {
                 $this->dependencies['db'] = Database::getInstance();
                 error_log("Base de données initialisée avec succès");
             } catch (\Exception $e) {
                 error_log("Erreur d'initialisation de la base de données: " . $e->getMessage());
-
             }
             
-
             $this->dependencies['session'] = Session::getInstance();
-
             $this->dependencies['envoyerMessage'] = EnvoyerMessage::getInstance();
-            
-
-            if (isset($this->dependencies['db'])) {
-                try {
-                    $this->dependencies['personneRepository'] = new PersonneRepository();
-                    $this->dependencies['compteRepository'] = new CompteRepository();
-                    $this->dependencies['transactionRepository'] = new \App\Repository\TransactionRepository($this->getDependency('db'));
-                } catch (\Exception $e) {
-                    error_log("Erreur d'initialisation des repositories: " . $e->getMessage());
-                }
-            }
-            
-
-            if (isset($this->dependencies['personneRepository'])) {
-                try {
-                    $this->dependencies['security'] = new SecurityService(
-                        $this->dependencies['personneRepository'],
-                        $this->dependencies['db']
-                    );
-                } catch (\Exception $e) {
-                    error_log("Erreur d'initialisation du service de sécurité: " . $e->getMessage());
-                }
-            }
-            
-
             $this->dependencies['upload'] = new Upload();
             
 
-            error_log("Dépendances initialisées: " . implode(', ', array_keys($this->dependencies)));
+            if (isset($this->dependencies['db'])) {
+                $pdo = $this->dependencies['db'];
+                try {
+                    $this->dependencies['personneRepository'] = new PersonneRepository();
+                    error_log("PersonneRepository initialisé avec succès");
+                } catch (\Exception $e) {
+                    error_log("Erreur d'initialisation de PersonneRepository: " . $e->getMessage());
+                }
+                
+                try {
+                    $this->dependencies['compteRepository'] = new CompteRepository();
+                    error_log("CompteRepository initialisé avec succès");
+                } catch (\Exception $e) {
+                    error_log("Erreur d'initialisation de CompteRepository: " . $e->getMessage());
+                }
+                
+                try {
+                    $this->dependencies['transactionRepository'] = new TransactionRepository($pdo);
+                    error_log("TransactionRepository initialisé avec succès");
+                } catch (\Exception $e) {
+                    error_log("Erreur d'initialisation de TransactionRepository: " . $e->getMessage());
+                }
+            }
+            
+            
+            try {
+                if (isset($this->dependencies['transactionRepository'])) {
+                    $this->dependencies['transactionService'] = new TransactionService($this->dependencies['transactionRepository']);
+                    error_log("TransactionService initialisé avec succès");
+                }
+            } catch (\Exception $e) {
+                error_log("Erreur d'initialisation de TransactionService: " . $e->getMessage());
+            }
+            
+            try {
+                if (isset($this->dependencies['compteRepository']) && isset($this->dependencies['transactionService'])) {
+                    $this->dependencies['compteService'] = new CompteService(
+                        $this->dependencies['compteRepository'],
+                        $this->dependencies['transactionService']
+                    );
+                    error_log("CompteService initialisé avec succès");
+                }
+            } catch (\Exception $e) {
+                error_log("Erreur d'initialisation de CompteService: " . $e->getMessage());
+            }
+            
+            try {
+                if (isset($this->dependencies['personneRepository'])) {
+                    $this->dependencies['security'] = new SecurityService();
+                    error_log("SecurityService initialisé avec succès");
+                }
+            } catch (\Exception $e) {
+                error_log("Erreur d'initialisation du service de sécurité: " . $e->getMessage());
+            }
+            
+            error_log("Toutes les dépendances ont été initialisées: " . implode(', ', array_keys($this->dependencies)));
             
         } catch (\Exception $e) {
             error_log("Erreur lors de l'initialisation des dépendances: " . $e->getMessage());

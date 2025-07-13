@@ -14,12 +14,29 @@
 
     <div class="ml-16 p-6">
         <div class="max-w-5xl mx-auto">
+            <?php if (isset($success) && !empty($success)) : ?>
+                <div class="bg-green-100 border-l-4 border-green-500 text-green-700 p-4 mb-4" role="alert">
+                    <p><?= htmlspecialchars($success) ?></p>
+                </div>
+            <?php endif; ?>
+            
+            <?php if (isset($error) && !empty($error)) : ?>
+                <div class="bg-red-100 border-l-4 border-red-500 text-red-700 p-4 mb-4" role="alert">
+                    <p><?= htmlspecialchars($error) ?></p>
+                </div>
+            <?php endif; ?>
+            
             <div class="flex items-center justify-between mb-6">
                 <h1 class="text-2xl font-bold text-gray-800">Toutes mes transactions</h1>
-                <a href="/accueil" class="text-orange-500 hover:text-orange-600 flex items-center">
-                    <i class='bx bx-arrow-back mr-1'></i>
-                    <span>Retour à l'accueil</span>
-                </a>
+                <div class="flex space-x-3">
+                    <a href="/transactions/create" class="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-white bg-orange-500 hover:bg-orange-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-orange-500">
+                        <i class='bx bx-plus mr-2'></i> Nouvelle transaction
+                    </a>
+                    <a href="/accueil" class="text-orange-500 hover:text-orange-600 flex items-center">
+                        <i class='bx bx-arrow-back mr-1'></i>
+                        <span>Retour à l'accueil</span>
+                    </a>
+                </div>
             </div>
             
             <div class="flex flex-col lg:flex-row gap-4 mb-6">

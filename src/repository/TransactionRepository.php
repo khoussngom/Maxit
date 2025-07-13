@@ -13,6 +13,30 @@ class TransactionRepository
         $this->pdo = $pdo;
     }
     
+    public function create(array $data): ?int
+    {
+        try {
+            error_log("Création d'une transaction: " . json_encode($data));
+            
+            $columns = implode(', ', array_map(fn($key) => "\"$key\"", array_keys($data)));
+            $placeholders = implode(', ', array_map(fn($key) => ":$key", array_keys($data)));
+            
+            $sql = "INSERT INTO transactions ($columns) VALUES ($placeholders) RETURNING id";
+            error_log("SQL: $sql");
+            
+            $stmt = $this->pdo->prepare($sql);
+            $stmt->execute($data);
+            
+            $result = $stmt->fetch(\PDO::FETCH_ASSOC);
+            error_log("Résultat de la création de la transaction: " . json_encode($result));
+            
+            return isset($result['id']) ? (int)$result['id'] : null;
+        } catch (\PDOException $e) {
+            error_log("Erreur lors de la création d'une transaction: " . $e->getMessage());
+            return null;
+        }
+    }
+    
     public function findRecentByCompte(string $compteTelephone, int $limit = 10): array
     {
         try {
@@ -71,7 +95,7 @@ class TransactionRepository
         }
     }
     
-
+    
     public function findAllByPersonneWithFilters($personneTelephone, array $filters = [], int $page = 1, int $perPage = 7): array
     {
         try {

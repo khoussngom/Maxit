@@ -20,30 +20,30 @@ class AcceuilController extends AbstractController
                 exit;
             }
             
-            // Récupération du téléphone de l'utilisateur (qui est notre clé primaire)
+
             $telephone = $session->get('user_id');
             
-            // Si user_id n'existe pas dans la session, on essaie de le récupérer depuis l'objet user
+
             if (!$telephone && $user && method_exists($user, 'getTelephone')) {
                 $telephone = $user->getTelephone();
                 
-                // Log pour le débogage
+
                 error_log('Téléphone récupéré de l\'objet user: ' . ($telephone ?: 'non disponible'));
                 
-                // Stocke le téléphone dans la session pour les prochaines utilisations
+
                 if ($telephone) {
                     $session->set('user_id', $telephone);
                 }
             }
             
-            // Vérification que le téléphone est bien défini
+
             if (empty($telephone)) {
                 error_log('Erreur: Téléphone utilisateur non trouvé dans la session ou l\'objet utilisateur');
                 header('Location: /login');
                 exit;
             }
             
-            // S'assurer que le téléphone est bien une chaîne de caractères
+
             $telephone = (string) $telephone;
             
             $compteRepository = $app->getDependency('compteRepository');
@@ -63,7 +63,7 @@ class AcceuilController extends AbstractController
             } catch (\Exception $e) {
                 error_log('Erreur lors de la récupération des comptes: ' . $e->getMessage());
                 error_log($e->getTraceAsString());
-                // Continuer l'exécution avec un tableau vide
+
             }
             
             $transactions = [];
@@ -77,13 +77,19 @@ class AcceuilController extends AbstractController
             } catch (\Exception $e) {
                 error_log('Erreur lors de la récupération des transactions: ' . $e->getMessage());
                 error_log($e->getTraceAsString());
-                // Continuer l'exécution avec un tableau vide
+
             }
+            
+
+            $success = $session->getFlash('success');
+            $error = $session->getFlash('error');
             
             $this->renderHtml('accueil', [
                 'user' => $user,
                 'comptes' => $comptes ?? [],
-                'transactions' => $transactions
+                'transactions' => $transactions,
+                'success' => $success,
+                'error' => $error
             ]);
         } catch (\Exception $e) {
             error_log("Erreur dans AcceuilController::index : " . $e->getMessage());
@@ -115,7 +121,7 @@ class AcceuilController extends AbstractController
                 exit;
             }
             
-            // Récupération du téléphone de l'utilisateur
+
             $telephone = $session->get('user_id');
             
             if (!$telephone && $user && method_exists($user, 'getTelephone')) {
@@ -125,36 +131,36 @@ class AcceuilController extends AbstractController
                 }
             }
             
-            // Vérification que le téléphone est bien défini
+
             if (empty($telephone)) {
                 error_log('Erreur: Téléphone utilisateur non trouvé dans la session ou l\'objet utilisateur');
                 header('Location: /login');
                 exit;
             }
             
-            // S'assurer que le téléphone est bien une chaîne de caractères
+
             $telephone = (string) $telephone;
             
-            // Récupération des paramètres de filtrage et pagination
+
             $page = isset($_GET['page']) ? max(1, (int)$_GET['page']) : 1;
             $perPage = isset($_GET['perPage']) ? (int)$_GET['perPage'] : 7;
             
-            // Validation du nombre d'éléments par page
+
             $perPage = in_array($perPage, [7, 15, 25, 50]) ? $perPage : 7;
             
-            // Filtres
+
             $filters = [
                 'type' => $_GET['type'] ?? null,
                 'date' => $_GET['date'] ?? null
             ];
             
-            // Nettoyage des filtres vides
+
             $filters = array_filter($filters);
             
             $transactionRepository = $app->getDependency('transactionRepository');
             $compteRepository = $app->getDependency('compteRepository');
             
-            // Récupération des comptes pour afficher le solde
+
             $comptes = [];
             try {
                 $comptes = $compteRepository->findByPersonne($telephone);
@@ -162,7 +168,7 @@ class AcceuilController extends AbstractController
                 error_log('Erreur lors de la récupération des comptes: ' . $e->getMessage());
             }
             
-            // Récupération des transactions avec filtrage et pagination
+
             $result = [];
             try {
                 if ($transactionRepository && method_exists($transactionRepository, 'findAllByPersonneWithFilters')) {
@@ -176,7 +182,7 @@ class AcceuilController extends AbstractController
                 error_log($e->getTraceAsString());
             }
             
-            // Si result est vide, initialiser avec une structure par défaut
+
             if (empty($result)) {
                 $result = [
                     'transactions' => [],
@@ -189,13 +195,19 @@ class AcceuilController extends AbstractController
                 ];
             }
             
-            // Rendre la vue
+
+            $success = $session->getFlash('success');
+            $error = $session->getFlash('error');
+            
+
             $this->renderHtml('transactions', [
                 'user' => $user,
                 'comptes' => $comptes ?? [],
                 'transactions' => $result['transactions'] ?? [],
                 'pagination' => $result['pagination'] ?? [],
-                'filters' => $filters
+                'filters' => $filters,
+                'success' => $success,
+                'error' => $error
             ]);
         } catch (\Exception $e) {
             error_log("Erreur dans AcceuilController::transactions : " . $e->getMessage());
@@ -204,6 +216,346 @@ class AcceuilController extends AbstractController
             $this->renderHtml('error', [
                 'message' => 'Une erreur est survenue lors du chargement de la page des transactions.'
             ]);
+        }
+    }
+    
+    public function comptes(): void
+    {
+        try {
+            $app = App::getInstance();
+            $session = $app->getDependency('session');
+            
+            $user = $session->get('user');
+            
+            if (!$user) {
+                header('Location: /login');
+                exit;
+            }
+            
+
+            $telephone = $session->get('user_id');
+            
+            if (!$telephone && $user && method_exists($user, 'getTelephone')) {
+                $telephone = $user->getTelephone();
+                if ($telephone) {
+                    $session->set('user_id', $telephone);
+                }
+            }
+            
+
+            if (empty($telephone)) {
+                error_log('Erreur: Téléphone utilisateur non trouvé dans la session ou l\'objet utilisateur');
+                header('Location: /login');
+                exit;
+            }
+            
+            $telephone = (string) $telephone;
+            
+
+            $compteService = $app->getDependency('compteService');
+            
+            $comptePrincipal = null;
+            $comptesSecondaires = [];
+            
+            try {
+                if (method_exists($compteService, 'getComptePrincipal')) {
+                    $comptePrincipal = $compteService->getComptePrincipal($telephone);
+                }
+                
+                if (method_exists($compteService, 'getComptesSecondaires')) {
+                    $comptesSecondaires = $compteService->getComptesSecondaires($telephone);
+                }
+            } catch (\Exception $e) {
+                error_log('Erreur lors de la récupération des comptes: ' . $e->getMessage());
+                error_log($e->getTraceAsString());
+            }
+            
+
+            $success = $session->getFlash('success');
+            $error = $session->getFlash('error');
+            
+
+            $this->renderHtml('comptes', [
+                'user' => $user,
+                'comptePrincipal' => $comptePrincipal,
+                'comptesSecondaires' => $comptesSecondaires,
+                'success' => $success,
+                'error' => $error
+            ]);
+        } catch (\Exception $e) {
+            error_log("Erreur dans AcceuilController::comptes : " . $e->getMessage());
+            error_log("Trace: " . $e->getTraceAsString());
+            
+            $this->renderHtml('error', [
+                'message' => 'Une erreur est survenue lors du chargement de la page des comptes.'
+            ]);
+        }
+    }
+    
+    public function createCompteSecondaire(): void
+    {
+        try {
+            $app = App::getInstance();
+            $session = $app->getDependency('session');
+            
+            $user = $session->get('user');
+            
+            if (!$user) {
+                header('Location: /login');
+                exit;
+            }
+            
+            $telephone = $session->get('user_id');
+            if (!$telephone) {
+                header('Location: /login');
+                exit;
+            }
+            
+
+            $compteService = $app->getDependency('compteService');
+            $comptePrincipal = $compteService->getComptePrincipal($telephone);
+            
+            if (!$comptePrincipal) {
+                $session->setFlash('error', 'Vous devez avoir un compte principal avant de créer un compte secondaire.');
+                header('Location: /comptes');
+                exit;
+            }
+            
+
+            $this->renderHtml('create-compte-secondaire', [
+                'user' => $user,
+                'comptePrincipal' => $comptePrincipal
+            ]);
+        } catch (\Exception $e) {
+            error_log("Erreur dans AcceuilController::createCompteSecondaire : " . $e->getMessage());
+            error_log("Trace: " . $e->getTraceAsString());
+            
+            $this->renderHtml('error', [
+                'message' => 'Une erreur est survenue lors du chargement de la page de création de compte secondaire.'
+            ]);
+        }
+    }
+    
+    public function storeCompteSecondaire(): void
+    {
+        try {
+            $app = App::getInstance();
+            $session = $app->getDependency('session');
+            
+            $user = $session->get('user');
+            
+            if (!$user) {
+                header('Location: /login');
+                exit;
+            }
+            
+            $telephone = $session->get('user_id');
+            if (!$telephone) {
+                header('Location: /login');
+                exit;
+            }
+            
+
+            $numCompteSecondaire = $_POST['telephone'] ?? null;
+            $montantInitial = isset($_POST['montant_initial']) ? (float) $_POST['montant_initial'] : 0;
+            
+
+            if (empty($numCompteSecondaire)) {
+                $session->setFlash('error', 'Le numéro de téléphone du compte secondaire est obligatoire.');
+                header('Location: /comptes/secondaire/create');
+                exit;
+            }
+            
+            if ($montantInitial < 0) {
+                $session->setFlash('error', 'Le montant initial ne peut pas être négatif.');
+                header('Location: /comptes/secondaire/create');
+                exit;
+            }
+            
+
+            $compteService = $app->getDependency('compteService');
+            
+
+            $success = $compteService->createCompteSecondaire($telephone, $numCompteSecondaire, $montantInitial);
+            
+            if ($success) {
+                $session->setFlash('success', 'Le compte secondaire a été créé avec succès.');
+                header('Location: /comptes');
+                exit;
+            } else {
+                $session->setFlash('error', 'Une erreur est survenue lors de la création du compte secondaire.');
+                header('Location: /comptes/secondaire/create');
+                exit;
+            }
+        } catch (\Exception $e) {
+            error_log("Erreur dans AcceuilController::storeCompteSecondaire : " . $e->getMessage());
+            error_log("Trace: " . $e->getTraceAsString());
+            
+            $app = App::getInstance();
+            $session = $app->getDependency('session');
+            $session->setFlash('error', 'Une erreur est survenue lors de la création du compte secondaire.');
+            
+            header('Location: /comptes/secondaire/create');
+            exit;
+        }
+    }
+    
+    public function createTransaction(): void
+    {
+        try {
+            $app = App::getInstance();
+            $session = $app->getDependency('session');
+            
+            $user = $session->get('user');
+            
+            if (!$user) {
+                header('Location: /login');
+                exit;
+            }
+            
+
+            $telephone = $session->get('user_id');
+            
+            if (!$telephone && $user && method_exists($user, 'getTelephone')) {
+                $telephone = $user->getTelephone();
+                if ($telephone) {
+                    $session->set('user_id', $telephone);
+                }
+            }
+            
+
+            if (empty($telephone)) {
+                error_log('Erreur: Téléphone utilisateur non trouvé dans la session ou l\'objet utilisateur');
+                header('Location: /login');
+                exit;
+            }
+            
+            $telephone = (string) $telephone;
+            
+
+            $compteService = $app->getDependency('compteService');
+            $comptes = [];
+            
+            try {
+
+                $compteRepository = $app->getDependency('compteRepository');
+                $comptes = $compteRepository->findByPersonne($telephone);
+            } catch (\Exception $e) {
+                error_log('Erreur lors de la récupération des comptes: ' . $e->getMessage());
+                error_log($e->getTraceAsString());
+            }
+            
+
+            $error = $session->getFlash('error');
+            
+
+            $this->renderHtml('create-transaction', [
+                'user' => $user,
+                'comptes' => $comptes,
+                'error' => $error
+            ]);
+        } catch (\Exception $e) {
+            error_log("Erreur dans AcceuilController::createTransaction : " . $e->getMessage());
+            error_log("Trace: " . $e->getTraceAsString());
+            
+            $this->renderHtml('error', [
+                'message' => 'Une erreur est survenue lors du chargement de la page de création de transaction.'
+            ]);
+        }
+    }
+    
+    public function storeTransaction(): void
+    {
+        try {
+            $app = App::getInstance();
+            $session = $app->getDependency('session');
+            
+            $user = $session->get('user');
+            
+            if (!$user) {
+                header('Location: /login');
+                exit;
+            }
+            
+            $telephone = $session->get('user_id');
+            if (!$telephone) {
+                header('Location: /login');
+                exit;
+            }
+            
+
+            $type = $_POST['type'] ?? null;
+            $compteSource = $_POST['compte_telephone'] ?? null;
+            $destination = $_POST['destination_telephone'] ?? null;
+            $montant = isset($_POST['montant']) ? (float) $_POST['montant'] : 0;
+            $motif = $_POST['motif'] ?? '';
+            
+
+            if (empty($type)) {
+                $session->setFlash('error', 'Le type de transaction est obligatoire.');
+                header('Location: /transactions/create');
+                exit;
+            }
+            
+            if (empty($compteSource)) {
+                $session->setFlash('error', 'Le compte source est obligatoire.');
+                header('Location: /transactions/create');
+                exit;
+            }
+            
+            if ($type === 'transfert' && empty($destination)) {
+                $session->setFlash('error', 'Le compte destinataire est obligatoire pour un transfert.');
+                header('Location: /transactions/create');
+                exit;
+            }
+            
+            if ($montant <= 0) {
+                $session->setFlash('error', 'Le montant doit être supérieur à zéro.');
+                header('Location: /transactions/create');
+                exit;
+            }
+            
+
+            $transactionService = $app->getDependency('transactionService');
+            
+
+            $success = false;
+            
+            switch ($type) {
+                case 'depot':
+                    $success = $transactionService->effectuerDepot($compteSource, $montant, $motif);
+                    break;
+                case 'retrait':
+                    $success = $transactionService->effectuerRetrait($compteSource, $montant, $motif);
+                    break;
+                case 'transfert':
+                    $success = $transactionService->effectuerTransfert($compteSource, $destination, $montant, $motif);
+                    break;
+                default:
+                    $session->setFlash('error', 'Type de transaction non reconnu.');
+                    header('Location: /transactions/create');
+                    exit;
+            }
+            
+            if ($success) {
+                $session->setFlash('success', 'La transaction a été effectuée avec succès.');
+                header('Location: /transactions');
+                exit;
+            } else {
+                $session->setFlash('error', 'Une erreur est survenue lors de la transaction.');
+                header('Location: /transactions/create');
+                exit;
+            }
+        } catch (\Exception $e) {
+            error_log("Erreur dans AcceuilController::storeTransaction : " . $e->getMessage());
+            error_log("Trace: " . $e->getTraceAsString());
+            
+            $app = App::getInstance();
+            $session = $app->getDependency('session');
+            $session->setFlash('error', 'Une erreur est survenue lors de la transaction: ' . $e->getMessage());
+            
+            header('Location: /transactions/create');
+            exit;
         }
     }
 }
