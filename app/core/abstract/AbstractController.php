@@ -24,7 +24,6 @@ abstract class AbstractController{
 
     public function renderHtml(string $view, $data = [])
     {
-        // Ne pas inclure systématiquement le sidebar, il est déjà inclus dans les templates
         extract($data);
         ob_start();
         require_once dirname(__DIR__, 3) . '/templates/' . $view . '.html.php';

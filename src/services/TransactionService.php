@@ -32,29 +32,35 @@ class TransactionService
     public function createTransaction(string $compteTelephone, float $montant, string $type, string $motif = '', array $additionalData = []): bool
     {
         try {
-
             if (!in_array($type, ['depot', 'retrait', 'paiement', 'transfert'])) {
                 throw new \InvalidArgumentException("Type de transaction invalide");
             }
             
+            error_log("Préparation des données pour création de transaction - Compte: {$compteTelephone}, Montant: {$montant}, Type: {$type}");
+            
+            // Préparer les données en tenant compte du format de date approprié
             $data = [
                 'compte_telephone' => $compteTelephone,
                 'montant' => $montant,
                 'type' => $type,
-                'date' => date('Y-m-d H:i:s'),
-                'motif' => $motif
+                'date' => date('Y-m-d'), // Format de date sans heure pour correspondre au type date dans PostgreSQL
+                'motif' => $motif ?: null // S'assurer que la valeur n'est pas une chaîne vide
             ];
             
+            error_log("Données de transaction: " . json_encode($data));
 
             if (!empty($additionalData)) {
                 $data = array_merge($data, $additionalData);
+                error_log("Données additionnelles: " . json_encode($additionalData));
             }
             
             $transactionId = $this->transactionRepository->create($data);
+            error_log("Résultat de la création: ID=" . ($transactionId ?: 'null'));
             
             return $transactionId !== null;
         } catch (\Exception $e) {
             error_log("Erreur lors de la création de la transaction: " . $e->getMessage());
+            error_log("Trace: " . $e->getTraceAsString());
             return false;
         }
     }
@@ -89,8 +95,9 @@ class TransactionService
     
     public function effectuerDepot(string $compteTelephone, float $montant, string $motif = ''): bool
     {
+        $transactionStarted = false;
+        
         try {
-
             if ($montant <= 0) {
                 throw new \InvalidArgumentException("Le montant du dépôt doit être positif");
             }
@@ -98,30 +105,61 @@ class TransactionService
             $app = \App\Core\App::getInstance();
             $compteRepository = $app->getDependency('compteRepository');
             
-
             $compte = $compteRepository->findByTelephone($compteTelephone);
             if (!$compte) {
                 throw new \Exception("Compte non trouvé");
             }
             
-
-            $nouveauSolde = (float)$compte['solde'] + $montant;
-            $compteRepository->updateSolde($compteTelephone, $nouveauSolde);
+            // Démarrer une transaction pour garantir l'atomicité
+            if (method_exists($compteRepository, 'beginTransaction')) {
+                $compteRepository->beginTransaction();
+                $transactionStarted = true;
+                error_log("Transaction BD démarrée pour dépôt");
+            }
             
-
-            $transactionCreated = $this->createTransaction($compteTelephone, $montant, 'depot', $motif);
-            
-            return $transactionCreated;
+            try {
+                // Mise à jour du solde
+                $nouveauSolde = (float)$compte['solde'] + $montant;
+                $soldeUpdated = $compteRepository->updateSolde($compteTelephone, $nouveauSolde);
+                
+                if (!$soldeUpdated) {
+                    throw new \Exception("Erreur lors de la mise à jour du solde");
+                }
+                
+                // Création de la transaction
+                $transactionCreated = $this->createTransaction($compteTelephone, $montant, 'depot', $motif);
+                
+                if (!$transactionCreated) {
+                    throw new \Exception("Erreur lors de l'enregistrement de la transaction");
+                }
+                
+                // Valider la transaction
+                if ($transactionStarted && method_exists($compteRepository, 'commit')) {
+                    $compteRepository->commit();
+                    error_log("Transaction BD validée pour dépôt");
+                }
+                
+                return true;
+            } catch (\Exception $e) {
+                // Annuler en cas d'erreur
+                if ($transactionStarted && method_exists($compteRepository, 'rollBack')) {
+                    $compteRepository->rollBack();
+                    error_log("Transaction BD annulée pour dépôt: " . $e->getMessage());
+                }
+                throw $e;
+            }
         } catch (\Exception $e) {
             error_log("Erreur lors du dépôt: " . $e->getMessage());
+            error_log("Trace: " . $e->getTraceAsString());
             return false;
         }
     }
     
     public function effectuerRetrait(string $compteTelephone, float $montant, string $motif = ''): bool
     {
+        $transactionStarted = false;
+        
         try {
-
             if ($montant <= 0) {
                 throw new \InvalidArgumentException("Le montant du retrait doit être positif");
             }
@@ -129,27 +167,56 @@ class TransactionService
             $app = \App\Core\App::getInstance();
             $compteRepository = $app->getDependency('compteRepository');
             
-
             $compte = $compteRepository->findByTelephone($compteTelephone);
             if (!$compte) {
                 throw new \Exception("Compte non trouvé");
             }
             
-
             if ((float)$compte['solde'] < $montant) {
-                throw new \Exception("Solde insuffisant");
+                throw new \Exception("Solde insuffisant pour effectuer ce retrait");
             }
             
-
-            $nouveauSolde = (float)$compte['solde'] - $montant;
-            $compteRepository->updateSolde($compteTelephone, $nouveauSolde);
+            // Démarrer une transaction pour garantir l'atomicité
+            if (method_exists($compteRepository, 'beginTransaction')) {
+                $compteRepository->beginTransaction();
+                $transactionStarted = true;
+                error_log("Transaction BD démarrée pour retrait");
+            }
             
-
-            $transactionCreated = $this->createTransaction($compteTelephone, $montant, 'retrait', $motif);
-            
-            return $transactionCreated;
+            try {
+                // Mise à jour du solde
+                $nouveauSolde = (float)$compte['solde'] - $montant;
+                $soldeUpdated = $compteRepository->updateSolde($compteTelephone, $nouveauSolde);
+                
+                if (!$soldeUpdated) {
+                    throw new \Exception("Erreur lors de la mise à jour du solde");
+                }
+                
+                // Création de la transaction
+                $transactionCreated = $this->createTransaction($compteTelephone, $montant, 'retrait', $motif);
+                
+                if (!$transactionCreated) {
+                    throw new \Exception("Erreur lors de l'enregistrement de la transaction");
+                }
+                
+                // Valider la transaction
+                if ($transactionStarted && method_exists($compteRepository, 'commit')) {
+                    $compteRepository->commit();
+                    error_log("Transaction BD validée pour retrait");
+                }
+                
+                return true;
+            } catch (\Exception $e) {
+                // Annuler en cas d'erreur
+                if ($transactionStarted && method_exists($compteRepository, 'rollBack')) {
+                    $compteRepository->rollBack();
+                    error_log("Transaction BD annulée pour retrait: " . $e->getMessage());
+                }
+                throw $e;
+            }
         } catch (\Exception $e) {
             error_log("Erreur lors du retrait: " . $e->getMessage());
+            error_log("Trace: " . $e->getTraceAsString());
             return false;
         }
     }
@@ -198,47 +265,115 @@ class TransactionService
     
     public function effectuerTransfert(string $compteSourceTel, string $compteDestTel, float $montant, string $motif = ''): bool
     {
+        $transactionStarted = false;
+        
         try {
-
             if ($montant <= 0) {
                 throw new \InvalidArgumentException("Le montant du transfert doit être positif");
+            }
+            
+            if ($compteSourceTel === $compteDestTel) {
+                throw new \InvalidArgumentException("Impossible de faire un transfert vers le même compte");
             }
             
             $app = \App\Core\App::getInstance();
             $compteRepository = $app->getDependency('compteRepository');
             
-
+            error_log("Démarrage du transfert de {$compteSourceTel} vers {$compteDestTel} pour un montant de {$montant}");
+            
             $compteSource = $compteRepository->findByTelephone($compteSourceTel);
             if (!$compteSource) {
                 throw new \Exception("Compte source non trouvé");
             }
+            error_log("Compte source trouvé: " . json_encode($compteSource));
             
             $compteDest = $compteRepository->findByTelephone($compteDestTel);
             if (!$compteDest) {
                 throw new \Exception("Compte destinataire non trouvé");
             }
+            error_log("Compte destinataire trouvé: " . json_encode($compteDest));
             
-
             if ((float)$compteSource['solde'] < $montant) {
                 throw new \Exception("Solde insuffisant pour effectuer le transfert");
             }
             
-
-            $nouveauSoldeSource = (float)$compteSource['solde'] - $montant;
-            $nouveauSoldeDest = (float)$compteDest['solde'] + $montant;
-            
-            $updateSoldeSource = $compteRepository->updateSolde($compteSourceTel, $nouveauSoldeSource);
-            $updateSoldeDest = $compteRepository->updateSolde($compteDestTel, $nouveauSoldeDest);
-            
-            if (!$updateSoldeSource || !$updateSoldeDest) {
-                error_log("Erreur lors de la mise à jour des soldes");
-                return false;
+            if (method_exists($compteRepository, 'beginTransaction')) {
+                $compteRepository->beginTransaction();
+                $transactionStarted = true;
+                error_log("Transaction BD démarrée avec compteRepository");
             }
             
-
-            return $this->createTransfertTransaction($compteSourceTel, $compteDestTel, $montant, $motif);
+            try {
+                error_log("Création des enregistrements de transaction...");
+                
+                $retraitOk = $this->createTransaction(
+                    $compteSourceTel, 
+                    $montant, 
+                    'transfert', 
+                    $motif, 
+                    ['destination_telephone' => $compteDestTel]
+                );
+                
+                if (!$retraitOk) {
+                    error_log("ERREUR: Échec de la création de la transaction de retrait");
+                    throw new \Exception("Échec de la création de la transaction de retrait");
+                }
+                
+                error_log("Transaction de retrait créée avec succès");
+                
+                $depotOk = $this->createTransaction(
+                    $compteDestTel, 
+                    $montant, 
+                    'depot', 
+                    $motif, 
+                    ['source_telephone' => $compteSourceTel]
+                );
+                
+                if (!$depotOk) {
+                    error_log("ERREUR: Échec de la création de la transaction de dépôt");
+                    throw new \Exception("Échec de la création de la transaction de dépôt");
+                }
+                
+                error_log("Transaction de dépôt créée avec succès");
+                
+                error_log("Mise à jour des soldes...");
+                $nouveauSoldeSource = (float)$compteSource['solde'] - $montant;
+                $nouveauSoldeDest = (float)$compteDest['solde'] + $montant;
+                
+                $updateSoldeSource = $compteRepository->updateSolde($compteSourceTel, $nouveauSoldeSource);
+                if (!$updateSoldeSource) {
+                    error_log("ERREUR: Échec de la mise à jour du solde source");
+                    throw new \Exception("Erreur lors de la mise à jour du solde source");
+                }
+                
+                $updateSoldeDest = $compteRepository->updateSolde($compteDestTel, $nouveauSoldeDest);
+                if (!$updateSoldeDest) {
+                    error_log("ERREUR: Échec de la mise à jour du solde destinataire");
+                    throw new \Exception("Erreur lors de la mise à jour du solde destinataire");
+                }
+                
+                error_log("Soldes mis à jour avec succès.");
+                
+                if ($transactionStarted && method_exists($compteRepository, 'commit')) {
+                    $result = $compteRepository->commit();
+                    error_log("Transaction BD validée: " . ($result ? 'Succès' : 'Échec'));
+                    if (!$result) {
+                        throw new \Exception("Erreur lors de la validation de la transaction");
+                    }
+                }
+                
+                error_log("Transfert effectué avec succès!");
+                return true;
+            } catch (\Exception $e) {
+                if ($transactionStarted && method_exists($compteRepository, 'rollBack')) {
+                    $compteRepository->rollBack();
+                    error_log("Transaction BD annulée: " . $e->getMessage());
+                }
+                throw $e;
+            }
         } catch (\Exception $e) {
             error_log("Erreur lors du transfert: " . $e->getMessage());
+            error_log("Trace: " . $e->getTraceAsString());
             return false;
         }
     }

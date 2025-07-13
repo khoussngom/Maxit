@@ -1,0 +1,283 @@
+<?php
+
+namespace App\Controllers;
+
+use App\Core\App;
+use App\Abstract\AbstractController;
+
+class CompteController extends AbstractController
+{
+    /**
+     * Affiche la liste des comptes de l'utilisateur
+     */
+    public function index(): void
+    {
+        try {
+            $user = $this->checkAuthentication();
+            $telephone = $this->getUserTelephone($user);
+            
+            $compteService = App::getInstance()->getDependency('compteService');
+            
+            $comptePrincipal = null;
+            $comptesSecondaires = [];
+            
+            try {
+                $comptePrincipal = $compteService->getComptePrincipal($telephone);
+                $comptesSecondaires = $compteService->getComptesSecondaires($telephone);
+            } catch (\Exception $e) {
+                error_log('Erreur lors de la récupération des comptes: ' . $e->getMessage());
+            }
+            
+            $success = $this->session->getFlash('success');
+            $error = $this->session->getFlash('error');
+            
+            $this->renderHtml('comptes', [
+                'user' => $user,
+                'comptePrincipal' => $comptePrincipal,
+                'comptesSecondaires' => $comptesSecondaires,
+                'success' => $success,
+                'error' => $error
+            ]);
+        } catch (\Exception $e) {
+            $this->handleError($e, 'comptes');
+        }
+    }
+    
+    /**
+     * Affiche le formulaire de création d'un compte secondaire
+     */
+    public function create(): void
+    {
+        try {
+            $user = $this->checkAuthentication();
+            $telephone = $this->getUserTelephone($user);
+            
+            $compteService = App::getInstance()->getDependency('compteService');
+            $comptePrincipal = $compteService->getComptePrincipal($telephone);
+            
+            if (!$comptePrincipal) {
+                $this->session->setFlash('error', 'Vous devez avoir un compte principal avant de créer un compte secondaire.');
+                header('Location: /comptes');
+                exit;
+            }
+            
+            $this->renderHtml('create-compte-secondaire', [
+                'user' => $user,
+                'comptePrincipal' => $comptePrincipal
+            ]);
+        } catch (\Exception $e) {
+            $this->handleError($e, 'création de compte secondaire');
+        }
+    }
+    
+    /**
+     * Traite la création d'un compte secondaire
+     */
+    public function store(): void
+    {
+        try {
+            $user = $this->checkAuthentication();
+            $telephone = $this->getUserTelephone($user);
+            
+            $numCompteSecondaire = $this->validateSecondaryAccount();
+            $montantInitial = isset($_POST['montant_initial']) ? (float) $_POST['montant_initial'] : 0;
+            
+            $compteService = App::getInstance()->getDependency('compteService');
+            $success = $compteService->createCompteSecondaire($telephone, $numCompteSecondaire, $montantInitial);
+            
+            if ($success) {
+                $this->session->setFlash('success', 'Le compte secondaire a été créé avec succès.');
+                header('Location: /comptes');
+            } else {
+                $this->session->setFlash('error', 'Une erreur est survenue lors de la création du compte secondaire.');
+                header('Location: /comptes/secondaire/create');
+            }
+            exit;
+        } catch (\Exception $e) {
+            $this->handleStoreError($e, 'comptes/secondaire/create', 'création du compte secondaire');
+        }
+    }
+    
+    /**
+     * Affiche le formulaire pour changer un compte secondaire en compte principal
+     */
+    public function changePrincipal(): void
+    {
+        try {
+            $user = $this->checkAuthentication();
+            $telephone = $this->getUserTelephone($user);
+            
+            $compteService = App::getInstance()->getDependency('compteService');
+            $comptePrincipal = $compteService->getComptePrincipal($telephone);
+            $comptesSecondaires = $compteService->getComptesSecondaires($telephone);
+            
+            $compteSelectionne = $this->getSelectedAccount($comptesSecondaires);
+            
+            $success = $this->session->getFlash('success');
+            $error = $this->session->getFlash('error');
+            
+            $this->renderHtml('change-compte-principal', [
+                'user' => $user,
+                'comptePrincipal' => $comptePrincipal,
+                'comptesSecondaires' => $comptesSecondaires,
+                'compteSelectionne' => $compteSelectionne,
+                'success' => $success,
+                'error' => $error
+            ]);
+        } catch (\Exception $e) {
+            $this->handleError($e, 'changement de compte principal');
+        }
+    }
+    
+    /**
+     * Traite la demande de changement de compte principal
+     */
+    public function storeChangePrincipal(): void
+    {
+        try {
+            $user = $this->checkAuthentication();
+            $telephone = $this->getUserTelephone($user);
+            
+            if (empty($_POST['compte_id'])) {
+                $this->session->setFlash('error', 'Paramètres invalides pour le changement de compte principal.');
+                header('Location: /comptes');
+                exit;
+            }
+            
+            $compteSecondaireId = $_POST['compte_id'];
+            
+            $compteService = App::getInstance()->getDependency('compteService');
+            $result = $compteService->changeCompteToPrincipal($telephone, $compteSecondaireId);
+            
+            if ($result) {
+                $this->session->setFlash('success', 'Le compte a été défini comme compte principal avec succès.');
+            } else {
+                $this->session->setFlash('error', 'Une erreur est survenue lors du changement de compte principal.');
+            }
+            
+            header('Location: /comptes');
+            exit;
+        } catch (\Exception $e) {
+            $this->handleStoreError($e, 'comptes', 'changement de compte principal');
+        }
+    }
+    
+    /**
+     * Vérifie l'authentification et redirige si nécessaire
+     */
+    private function checkAuthentication()
+    {
+        $user = $this->session->get('user');
+        
+        if (!$user) {
+            header('Location: /login');
+            exit;
+        }
+        
+        return $user;
+    }
+    
+    /**
+     * Récupère le téléphone de l'utilisateur connecté
+     */
+    private function getUserTelephone($user)
+    {
+        $telephone = $this->session->get('user_id');
+        
+        if (!$telephone && $user && method_exists($user, 'getTelephone')) {
+            $telephone = $user->getTelephone();
+            if ($telephone) {
+                $this->session->set('user_id', $telephone);
+            }
+        }
+        
+        if (empty($telephone)) {
+            error_log('Erreur: Téléphone utilisateur non trouvé dans la session ou l\'objet utilisateur');
+            header('Location: /login');
+            exit;
+        }
+        
+        return (string) $telephone;
+    }
+    
+    /**
+     * Valide les données du compte secondaire
+     */
+    private function validateSecondaryAccount()
+    {
+        $numCompteSecondaire = $_POST['telephone'] ?? null;
+        
+        if (empty($numCompteSecondaire)) {
+            $this->session->setFlash('error', 'Le numéro de téléphone du compte secondaire est obligatoire.');
+            header('Location: /comptes/secondaire/create');
+            exit;
+        }
+        
+        $montantInitial = isset($_POST['montant_initial']) ? (float) $_POST['montant_initial'] : 0;
+        
+        if ($montantInitial < 0) {
+            $this->session->setFlash('error', 'Le montant initial ne peut pas être négatif.');
+            header('Location: /comptes/secondaire/create');
+            exit;
+        }
+        
+        return $numCompteSecondaire;
+    }
+    
+    /**
+     * Récupère le compte sélectionné parmi les comptes secondaires
+     */
+    private function getSelectedAccount($comptesSecondaires)
+    {
+        $compteId = isset($_GET['id']) ? $_GET['id'] : null;
+        $compteSelectionne = null;
+        
+        if ($compteId) {
+            foreach ($comptesSecondaires as $compte) {
+                if ($compte['telephone'] === $compteId) {
+                    $compteSelectionne = $compte;
+                    break;
+                }
+            }
+        }
+        
+        if (!$compteSelectionne && !empty($comptesSecondaires)) {
+            $compteSelectionne = $comptesSecondaires[0];
+        }
+        
+        return $compteSelectionne;
+    }
+    
+    /**
+     * Gère les erreurs lors de l'affichage
+     */
+    private function handleError(\Exception $e, $pageType)
+    {
+        error_log("Erreur dans CompteController pour $pageType: " . $e->getMessage());
+        error_log("Trace: " . $e->getTraceAsString());
+        
+        $this->renderHtml('error', [
+            'message' => "Une erreur est survenue lors du chargement de la page de $pageType."
+        ]);
+    }
+    
+    /**
+     * Gère les erreurs lors des opérations de stockage
+     */
+    private function handleStoreError(\Exception $e, $redirectUrl, $operationType)
+    {
+        error_log("Erreur dans CompteController lors de $operationType: " . $e->getMessage());
+        error_log("Trace: " . $e->getTraceAsString());
+        
+        $this->session->setFlash('error', "Une erreur est survenue lors de $operationType.");
+        
+        header("Location: /$redirectUrl");
+        exit;
+    }
+    
+    // Méthodes abstraites requises
+    public function update(): void {}
+    public function show(): void {}
+    public function edit(): void {}
+    public function destroy() { return null; }
+}

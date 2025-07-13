@@ -45,7 +45,19 @@
                         <span class="text-orange-500 text-lg font-semibold">Solde:</span>
                         <div class="flex items-center space-x-2">
                             <span class="text-white text-lg">
-                                <?= !empty($comptes) ? number_format($comptes[0]['solde'], 0, ',', ' ') : '0' ?> FCFA
+                                <?php 
+                                $comptePrincipal = null;
+                                if (!empty($comptes)) {
+                                    foreach ($comptes as $compte) {
+                                        if (isset($compte['typecompte']) && $compte['typecompte'] === 'principal') {
+                                            $comptePrincipal = $compte;
+                                            break;
+                                        }
+                                    }
+                                }
+                                echo $comptePrincipal ? number_format($comptePrincipal['solde'], 0, ',', ' ') : 
+                                     (!empty($comptes) ? number_format($comptes[0]['solde'], 0, ',', ' ') : '0');
+                                ?> FCFA
                             </span>
                         </div>
                     </div>

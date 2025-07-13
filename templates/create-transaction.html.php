@@ -50,7 +50,7 @@
                                     <?php foreach ($comptes as $compte): ?>
                                         <option value="<?= htmlspecialchars($compte['telephone']) ?>">
                                             <?= htmlspecialchars($compte['telephone']) ?> - 
-                                            <?= $compte['type'] === 'principal' ? 'Principal' : 'Secondaire' ?> - 
+                                            <?= (isset($compte['typecompte']) && $compte['typecompte'] === 'principal') ? 'Principal' : 'Secondaire' ?> - 
                                             Solde: <?= number_format($compte['solde'], 2, ',', ' ') ?> XOF
                                         </option>
                                     <?php endforeach; ?>

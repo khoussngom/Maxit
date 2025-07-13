@@ -166,6 +166,7 @@ class CompteService
         try {
             error_log("Tentative de changement du compte $compteSecondaireTelephone en compte principal pour $personneTelephone");
             
+            // Vérifier si le compte à promouvoir existe et appartient à cette personne
             $compteSecondaire = $this->compteRepository->findByTelephone($compteSecondaireTelephone);
             
             if (!$compteSecondaire || $compteSecondaire['personne_telephone'] !== $personneTelephone) {
@@ -173,38 +174,40 @@ class CompteService
                 return false;
             }
             
-            if (!isset($compteSecondaire['typecompte']) || $compteSecondaire['typecompte'] !== 'secondaire') {
-                error_log("Le compte n'est pas un compte secondaire");
-                return false;
+            // Vérifier que le compte n'est pas déjà principal (pour éviter des opérations inutiles)
+            if (isset($compteSecondaire['typecompte']) && $compteSecondaire['typecompte'] === 'principal') {
+                error_log("Le compte est déjà un compte principal");
+                return true; // C'est déjà fait, donc on considère que c'est un succès
             }
             
-            $comptePrincipal = $this->getComptePrincipal($personneTelephone);
-            if (!$comptePrincipal) {
-                error_log("Aucun compte principal trouvé pour la personne $personneTelephone");
-                return false;
-            }
+            // Récupérer tous les comptes de la personne
+            $comptesPersonne = $this->compteRepository->findByPersonne($personneTelephone);
             
             $this->compteRepository->beginTransaction();
             
             try {
-
-                $successDemotion = $this->compteRepository->updateTypeCompte($comptePrincipal['telephone'], 'secondaire');
-                if (!$successDemotion) {
-                    throw new \Exception("Impossible de changer l'ancien compte principal en secondaire");
+                // D'abord, on met tous les comptes de la personne en secondaire
+                foreach ($comptesPersonne as $compte) {
+                    if ($compte['telephone'] !== $compteSecondaireTelephone && isset($compte['typecompte']) && $compte['typecompte'] === 'principal') {
+                        $successDemotion = $this->compteRepository->updateTypeCompte($compte['telephone'], 'secondaire');
+                        if (!$successDemotion) {
+                            throw new \Exception("Impossible de changer l'ancien compte principal en secondaire");
+                        }
+                        error_log("Compte {$compte['telephone']} changé en secondaire");
+                    }
                 }
                 
-
+                // Ensuite, on définit le nouveau compte principal
                 $successPromotion = $this->compteRepository->updateTypeCompte($compteSecondaireTelephone, 'principal');
                 if (!$successPromotion) {
                     throw new \Exception("Impossible de changer le compte secondaire en principal");
                 }
+                error_log("Compte $compteSecondaireTelephone promu en principal");
                 
-
                 $this->compteRepository->commit();
                 error_log("Changement du compte principal réussi");
                 return true;
             } catch (\Exception $e) {
-
                 $this->compteRepository->rollBack();
                 error_log("Erreur lors du changement de compte principal : " . $e->getMessage());
                 return false;

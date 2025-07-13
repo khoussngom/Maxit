@@ -1,6 +1,8 @@
 <?php
 use App\Controllers\AcceuilController;
 use App\Controllers\SecurityController;
+use App\Controllers\CompteController;
+use App\Controllers\TransactionController;
 
 return $routes = [
     '/' => [
@@ -30,39 +32,39 @@ return $routes = [
         'method' => 'GET'
     ],
     '/transactions' => [
-        'controller' => AcceuilController::class,
+        'controller' => TransactionController::class,
         'middlewares' => ['auth'],
-        'action' => 'transactions',
+        'action' => 'index',
         'method' => 'GET'
     ],
     '/comptes' => [
-        'controller' => AcceuilController::class,
+        'controller' => CompteController::class,
         'middlewares' => ['auth'],
-        'action' => 'comptes',
+        'action' => 'index',
         'method' => 'GET'
     ],
     'GET:/comptes/secondaire/create' => [
-        'controller' => AcceuilController::class,
+        'controller' => CompteController::class,
         'middlewares' => ['auth'],
-        'action' => 'createCompteSecondaire',
+        'action' => 'create',
         'method' => 'GET'
     ],
     'POST:/comptes/secondaire/store' => [
-        'controller' => AcceuilController::class,
+        'controller' => CompteController::class,
         'middlewares' => ['auth'],
-        'action' => 'storeCompteSecondaire',
+        'action' => 'store',
         'method' => 'POST'
     ],
     'GET:/transactions/create' => [
-        'controller' => AcceuilController::class,
+        'controller' => TransactionController::class,
         'middlewares' => ['auth'],
-        'action' => 'createTransaction',
+        'action' => 'create',
         'method' => 'GET'
     ],
     'POST:/transactions/store' => [
-        'controller' => AcceuilController::class,
+        'controller' => TransactionController::class,
         'middlewares' => ['auth'],
-        'action' => 'storeTransaction',
+        'action' => 'store',
         'method' => 'POST'
     ],
     'GET:/inscription' => [
@@ -77,15 +79,15 @@ return $routes = [
         'middlewares' => ['PasswordHashMiddleware']
     ],
     'GET:/comptes/change-principal' => [
-        'controller' => AcceuilController::class,
+        'controller' => CompteController::class,
         'middlewares' => ['auth'],
-        'action' => 'changeComptePrincipal',
+        'action' => 'changePrincipal',
         'method' => 'GET'
     ],
     'POST:/comptes/change-principal/store' => [
-        'controller' => AcceuilController::class,
+        'controller' => CompteController::class,
         'middlewares' => ['auth'],
-        'action' => 'storeChangeComptePrincipal',
+        'action' => 'storeChangePrincipal',
         'method' => 'POST'
     ],
 ];
