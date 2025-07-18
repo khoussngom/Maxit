@@ -1,1 +1,5 @@
 .env
+db_info.php
+debug_compte.php
+fix_database.php
+inspect-compte.php
