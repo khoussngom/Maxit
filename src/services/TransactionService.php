@@ -38,13 +38,13 @@ class TransactionService
             
             error_log("Préparation des données pour création de transaction - Compte: {$compteTelephone}, Montant: {$montant}, Type: {$type}");
             
-            // Préparer les données en tenant compte du format de date approprié
+
             $data = [
                 'compte_telephone' => $compteTelephone,
                 'montant' => $montant,
                 'type' => $type,
-                'date' => date('Y-m-d'), // Format de date sans heure pour correspondre au type date dans PostgreSQL
-                'motif' => $motif ?: null // S'assurer que la valeur n'est pas une chaîne vide
+                'date' => date('Y-m-d'),
+                'motif' => $motif ?: null
             ];
             
             error_log("Données de transaction: " . json_encode($data));
@@ -110,7 +110,7 @@ class TransactionService
                 throw new \Exception("Compte non trouvé");
             }
             
-            // Démarrer une transaction pour garantir l'atomicité
+
             if (method_exists($compteRepository, 'beginTransaction')) {
                 $compteRepository->beginTransaction();
                 $transactionStarted = true;
@@ -118,7 +118,7 @@ class TransactionService
             }
             
             try {
-                // Mise à jour du solde
+
                 $nouveauSolde = (float)$compte['solde'] + $montant;
                 $soldeUpdated = $compteRepository->updateSolde($compteTelephone, $nouveauSolde);
                 
@@ -126,14 +126,14 @@ class TransactionService
                     throw new \Exception("Erreur lors de la mise à jour du solde");
                 }
                 
-                // Création de la transaction
+
                 $transactionCreated = $this->createTransaction($compteTelephone, $montant, 'depot', $motif);
                 
                 if (!$transactionCreated) {
                     throw new \Exception("Erreur lors de l'enregistrement de la transaction");
                 }
                 
-                // Valider la transaction
+
                 if ($transactionStarted && method_exists($compteRepository, 'commit')) {
                     $compteRepository->commit();
                     error_log("Transaction BD validée pour dépôt");
@@ -141,7 +141,7 @@ class TransactionService
                 
                 return true;
             } catch (\Exception $e) {
-                // Annuler en cas d'erreur
+
                 if ($transactionStarted && method_exists($compteRepository, 'rollBack')) {
                     $compteRepository->rollBack();
                     error_log("Transaction BD annulée pour dépôt: " . $e->getMessage());
@@ -176,7 +176,7 @@ class TransactionService
                 throw new \Exception("Solde insuffisant pour effectuer ce retrait");
             }
             
-            // Démarrer une transaction pour garantir l'atomicité
+
             if (method_exists($compteRepository, 'beginTransaction')) {
                 $compteRepository->beginTransaction();
                 $transactionStarted = true;
@@ -184,7 +184,7 @@ class TransactionService
             }
             
             try {
-                // Mise à jour du solde
+
                 $nouveauSolde = (float)$compte['solde'] - $montant;
                 $soldeUpdated = $compteRepository->updateSolde($compteTelephone, $nouveauSolde);
                 
@@ -192,14 +192,14 @@ class TransactionService
                     throw new \Exception("Erreur lors de la mise à jour du solde");
                 }
                 
-                // Création de la transaction
+
                 $transactionCreated = $this->createTransaction($compteTelephone, $montant, 'retrait', $motif);
                 
                 if (!$transactionCreated) {
                     throw new \Exception("Erreur lors de l'enregistrement de la transaction");
                 }
                 
-                // Valider la transaction
+
                 if ($transactionStarted && method_exists($compteRepository, 'commit')) {
                     $compteRepository->commit();
                     error_log("Transaction BD validée pour retrait");
@@ -207,7 +207,7 @@ class TransactionService
                 
                 return true;
             } catch (\Exception $e) {
-                // Annuler en cas d'erreur
+
                 if ($transactionStarted && method_exists($compteRepository, 'rollBack')) {
                     $compteRepository->rollBack();
                     error_log("Transaction BD annulée pour retrait: " . $e->getMessage());

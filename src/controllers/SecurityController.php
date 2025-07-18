@@ -22,18 +22,18 @@ class SecurityController extends AbstractController
 
     public function create(): void
     {
-        // Réinitialiser le validateur pour éviter les erreurs résiduelles à l'affichage initial
+
         Validator::reset();
         
-        // Récupérer les anciennes valeurs et erreurs s'il y en a
+
         $old = $this->session->get('old_input') ?? [];
         $errors = $this->session->get('flash_errors') ?? [];
         
-        // Vider les valeurs en session après les avoir récupérées
+
         $this->session->set('old_input', null);
         $this->session->set('flash_errors', null);
         
-        // Afficher le formulaire avec les données et erreurs récupérées
+
         $this->renderHtml('inscription', [
             'old' => $old,
             'errors' => $errors
@@ -42,17 +42,17 @@ class SecurityController extends AbstractController
 
     public function login()
     {
-        // Si ce n'est pas une soumission de formulaire, afficher simplement le formulaire
+
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-            // Récupérer les anciennes valeurs et erreurs s'il y en a
+
             $old = $this->session->get('old_input') ?? [];
             $errors = $this->session->get('flash_errors') ?? [];
             
-            // Vider les valeurs en session après les avoir récupérées
+
             $this->session->set('old_input', null);
             $this->session->set('flash_errors', null);
             
-            // Afficher le formulaire avec les données et erreurs récupérées
+
             $this->renderHtml('login', [
                 'old' => $old,
                 'errors' => $errors
@@ -60,7 +60,6 @@ class SecurityController extends AbstractController
             return;
         }
 
-        // Réinitialiser le validateur
         Validator::reset();
         
         $formData = [
@@ -68,7 +67,7 @@ class SecurityController extends AbstractController
             'password' => trim($_POST['password'] ?? '')
         ];
         
-        // Validation des champs
+
         if (empty($formData['login'])) {
             Validator::addError('login', 'Le login est obligatoire');
         }
@@ -101,18 +100,17 @@ class SecurityController extends AbstractController
                 return;
             }
 
-            // Connexion réussie, stocker l'utilisateur en session
             $this->session->set('user', $user);
-            $this->session->set('user_id', $user->getTelephone()); // Utiliser le téléphone comme identifiant
+            $this->session->set('user_id', $user->getTelephone());
             $this->session->set('logged_in', true);
             
-            // Assurer que la redirection fonctionne même si BASE_URL n'est pas défini
+
             $baseUrl = getenv('BASE_URL') ?: '';
             header('Location: ' . $baseUrl . '/accueil');
             exit;
             
         } catch (\Exception $e) {
-            // En cas d'erreur technique, afficher un message d'erreur général
+
             error_log('Erreur lors de la connexion: ' . $e->getMessage());
             Validator::addError('global', 'Une erreur est survenue lors de la connexion. Veuillez réessayer.');
             $this->session->set('flash_errors', Validator::getErrors());
@@ -127,13 +125,12 @@ class SecurityController extends AbstractController
 
     public function store(): void 
     {
-        // Si ce n'est pas une soumission de formulaire, rediriger vers la page d'inscription
+
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
             $this->renderHtml('inscription');
             return;
         }
         
-        // Réinitialiser le validateur pour éviter les erreurs résiduelles
         Validator::reset();
         
         $formData = [
@@ -149,7 +146,6 @@ class SecurityController extends AbstractController
             'photoVerso' => null
         ];
         
-        // Validation des champs obligatoires uniquement lors de la soumission du formulaire
         if (empty($formData['login'])) {
             Validator::addError('login', 'Le login est obligatoire');
         }
@@ -180,7 +176,6 @@ class SecurityController extends AbstractController
             Validator::addError('telephone', 'Format de téléphone invalide');
         }
         
-        // Validation des photos
         $photoRecto = Upload::save($_FILES['photorecto'] ?? null, 'uploads/cni');
         $photoVerso = Upload::save($_FILES['photoverso'] ?? null, 'uploads/cni');
         
@@ -196,9 +191,9 @@ class SecurityController extends AbstractController
             $formData['photoVerso'] = $photoVerso;
         }
         
-        // Vérification des validations
+
         if (!Validator::isValid()) {
-            // Stockage des erreurs et des données en session
+
             $this->session->set('flash_errors', Validator::getErrors());
             $this->session->set('old_input', $formData);
             $this->renderHtml('inscription');
@@ -240,10 +235,10 @@ class SecurityController extends AbstractController
 
     public function index():void
     {
-        // Réinitialiser le validateur pour éviter les erreurs résiduelles à l'affichage initial
+
         Validator::reset();
         
-        // Afficher simplement le formulaire de login sans erreurs
+
         $this->renderHtml('login');
     }
 

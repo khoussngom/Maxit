@@ -7,23 +7,22 @@ use App\Abstract\AbstractController;
 
 class TransactionController extends AbstractController
 {
-    /**
-     * Affiche la liste des transactions de l'utilisateur
-     */
+
+    
     public function index(): void
     {
         try {
             $user = $this->checkAuthentication();
             $telephone = $this->getUserTelephone($user);
             
-            // Récupérer les paramètres de pagination et de filtrage
+
             $page = isset($_GET['page']) ? max(1, (int)$_GET['page']) : 1;
             $perPage = isset($_GET['perPage']) ? (int)$_GET['perPage'] : 7;
             $perPage = in_array($perPage, [7, 15, 25, 50]) ? $perPage : 7;
             
             $filters = $this->getTransactionFilters();
             
-            // Récupérer les comptes et les transactions
+
             $comptes = $this->getComptesUtilisateur($telephone);
             $result = $this->getTransactionsUtilisateur($telephone, $filters, $page, $perPage);
             
@@ -44,9 +43,9 @@ class TransactionController extends AbstractController
         }
     }
     
-    /**
-     * Affiche le formulaire de création d'une transaction
-     */
+
+    
+
     public function create(): void
     {
         try {
@@ -69,16 +68,13 @@ class TransactionController extends AbstractController
         }
     }
     
-    /**
-     * Traite la création d'une transaction
-     */
+
     public function store(): void
     {
         try {
             $user = $this->checkAuthentication();
             $telephone = $this->getUserTelephone($user);
             
-            // Valider les données de la transaction
             $transactionData = $this->validateTransactionData();
             
             $transactionService = App::getInstance()->getDependency('transactionService');
@@ -88,7 +84,7 @@ class TransactionController extends AbstractController
             $error = null;
             
             try {
-                // Exécuter l'opération en fonction du type de transaction
+
                 switch ($transactionData['type']) {
                     case 'depot':
                         $success = $transactionService->effectuerDepot(
@@ -137,9 +133,7 @@ class TransactionController extends AbstractController
         }
     }
     
-    /**
-     * Récupère les filtres de transaction depuis les paramètres GET
-     */
+
     private function getTransactionFilters(): array
     {
         $filters = [
@@ -150,9 +144,7 @@ class TransactionController extends AbstractController
         return array_filter($filters);
     }
     
-    /**
-     * Récupère les comptes d'un utilisateur
-     */
+
     private function getComptesUtilisateur(string $telephone): array
     {
         try {
@@ -164,9 +156,6 @@ class TransactionController extends AbstractController
         }
     }
     
-    /**
-     * Récupère les transactions d'un utilisateur avec filtres et pagination
-     */
     private function getTransactionsUtilisateur(string $telephone, array $filters, int $page, int $perPage): array
     {
         try {
@@ -179,7 +168,7 @@ class TransactionController extends AbstractController
                 error_log('Transactions récupérées avec succès: ' . count($result['transactions']));
                 
                 if (empty($result['transactions'])) {
-                    // Si aucune transaction, vérifier si c'est un problème de filtre ou s'il n'y a vraiment pas de transaction
+
                     error_log('Vérification de l\'existence de transactions sans filtres');
                     $checkResult = $transactionRepository->findAllByPersonneWithFilters($telephone, [], 1, 1);
                     if (!empty($checkResult['transactions'])) {
@@ -209,9 +198,7 @@ class TransactionController extends AbstractController
         ];
     }
     
-    /**
-     * Valide les données de la transaction
-     */
+
     private function validateTransactionData(): array
     {
         $type = $_POST['type'] ?? null;
@@ -253,9 +240,7 @@ class TransactionController extends AbstractController
         ];
     }
     
-    /**
-     * Vérifie l'authentification et redirige si nécessaire
-     */
+
     private function checkAuthentication()
     {
         $user = $this->session->get('user');
@@ -268,9 +253,7 @@ class TransactionController extends AbstractController
         return $user;
     }
     
-    /**
-     * Récupère le téléphone de l'utilisateur connecté
-     */
+
     private function getUserTelephone($user)
     {
         $telephone = $this->session->get('user_id');
@@ -291,9 +274,7 @@ class TransactionController extends AbstractController
         return (string) $telephone;
     }
     
-    /**
-     * Gère les erreurs lors de l'affichage
-     */
+
     private function handleError(\Exception $e, $pageType)
     {
         error_log("Erreur dans TransactionController pour $pageType: " . $e->getMessage());
@@ -304,9 +285,6 @@ class TransactionController extends AbstractController
         ]);
     }
     
-    /**
-     * Gère les erreurs lors des opérations de stockage
-     */
     private function handleStoreError(\Exception $e, $redirectUrl, $operationType)
     {
         error_log("Erreur dans TransactionController lors de $operationType: " . $e->getMessage());
@@ -318,7 +296,6 @@ class TransactionController extends AbstractController
         exit;
     }
     
-    // Méthodes abstraites requises
     public function update(): void {}
     public function show(): void {}
     public function edit(): void {}

@@ -166,7 +166,7 @@ class CompteService
         try {
             error_log("Tentative de changement du compte $compteSecondaireTelephone en compte principal pour $personneTelephone");
             
-            // Vérifier si le compte à promouvoir existe et appartient à cette personne
+
             $compteSecondaire = $this->compteRepository->findByTelephone($compteSecondaireTelephone);
             
             if (!$compteSecondaire || $compteSecondaire['personne_telephone'] !== $personneTelephone) {
@@ -174,19 +174,19 @@ class CompteService
                 return false;
             }
             
-            // Vérifier que le compte n'est pas déjà principal (pour éviter des opérations inutiles)
+
             if (isset($compteSecondaire['typecompte']) && $compteSecondaire['typecompte'] === 'principal') {
                 error_log("Le compte est déjà un compte principal");
-                return true; // C'est déjà fait, donc on considère que c'est un succès
+                return true;
             }
             
-            // Récupérer tous les comptes de la personne
+
             $comptesPersonne = $this->compteRepository->findByPersonne($personneTelephone);
             
             $this->compteRepository->beginTransaction();
             
             try {
-                // D'abord, on met tous les comptes de la personne en secondaire
+
                 foreach ($comptesPersonne as $compte) {
                     if ($compte['telephone'] !== $compteSecondaireTelephone && isset($compte['typecompte']) && $compte['typecompte'] === 'principal') {
                         $successDemotion = $this->compteRepository->updateTypeCompte($compte['telephone'], 'secondaire');
@@ -197,7 +197,7 @@ class CompteService
                     }
                 }
                 
-                // Ensuite, on définit le nouveau compte principal
+
                 $successPromotion = $this->compteRepository->updateTypeCompte($compteSecondaireTelephone, 'principal');
                 if (!$successPromotion) {
                     throw new \Exception("Impossible de changer le compte secondaire en principal");

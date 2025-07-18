@@ -18,7 +18,7 @@ class TransactionRepository
         try {
             error_log("Création d'une transaction: " . json_encode($data));
             
-            // Vérifier les données obligatoires
+
             $requiredFields = ['compte_telephone', 'montant', 'type'];
             foreach ($requiredFields as $field) {
                 if (!isset($data[$field])) {
@@ -27,16 +27,13 @@ class TransactionRepository
                 }
             }
             
-            // S'assurer que la date est présente et au bon format
             if (!isset($data['date'])) {
-                $data['date'] = date('Y-m-d'); // Format de date sans heure
+                $data['date'] = date('Y-m-d');
             }
             
-            // Filtrer les données pour ne garder que les colonnes existantes dans la table
             $validColumns = ['id', 'montant', 'compte_telephone', 'type', 'date', 'motif', 'destination_telephone', 'source_telephone'];
             $filteredData = array_intersect_key($data, array_flip($validColumns));
             
-            // Construction de la requête SQL
             $columns = implode(', ', array_keys($filteredData));
             $placeholders = implode(', ', array_map(fn($key) => ":$key", array_keys($filteredData)));
             
@@ -47,17 +44,14 @@ class TransactionRepository
             try {
                 $stmt = $this->pdo->prepare($sql);
                 
-                // Binder chaque valeur avec le type approprié
                 foreach ($filteredData as $key => $value) {
                     if ($key === 'date') {
-                        // Format de date PostgreSQL
                         if (!is_string($value)) {
                             $value = date('Y-m-d');
                         }
                     } elseif ($key === 'montant') {
                         $value = (float)$value;
                     } elseif ($key === 'type') {
-                        // S'assurer que le type est l'une des valeurs attendues
                         if (!in_array($value, ['depot', 'retrait', 'paiement', 'transfert'])) {
                             error_log("Type de transaction invalide: $value. Utilisation de 'depot' par défaut.");
                             $value = 'depot';
@@ -79,7 +73,6 @@ class TransactionRepository
                 error_log("Résultat de la création de la transaction: " . json_encode($result));
                 
                 if (!isset($result['id'])) {
-                    // Si pas de résultat avec RETURNING id, vérifier si la transaction a été créée
                     $checkSql = "SELECT MAX(id) as last_id FROM transactions WHERE compte_telephone = :compte_telephone AND montant = :montant";
                     $checkStmt = $this->pdo->prepare($checkSql);
                     $checkStmt->bindValue(':compte_telephone', $filteredData['compte_telephone']);
@@ -92,16 +85,14 @@ class TransactionRepository
                         return (int)$checkResult['last_id'];
                     }
                     
-                    // En dernier recours, essayer lastInsertId
                     $lastId = $this->pdo->lastInsertId();
                     if ($lastId) {
                         error_log("Dernier ID inséré: " . $lastId);
                         return (int)$lastId;
                     }
                     
-                    // Si la transaction a été créée mais on ne peut pas récupérer l'ID
                     error_log("Impossible de récupérer l'ID, mais la transaction a peut-être été créée");
-                    return 1; // Retourner une valeur par défaut
+                    return 1;
                 }
                 
                 return (int)$result['id'];
@@ -109,7 +100,6 @@ class TransactionRepository
                 error_log("Exception PDO lors de l'exécution de la requête: " . $e->getMessage());
                 error_log("Code d'erreur: " . $e->getCode());
                 
-                // En cas d'erreur avec le type enum
                 if (strpos($e->getMessage(), 'invalid input value for enum') !== false) {
                     error_log("Problème avec le type enum, tentative d'insertion avec le type 'depot'");
                     $filteredData['type'] = 'depot';
@@ -139,9 +129,7 @@ class TransactionRepository
         }
     }
     
-    /**
-     * Crée la table transactions si elle n'existe pas
-     */
+
     private function createTransactionsTable(): void
     {
         try {
@@ -165,13 +153,10 @@ class TransactionRepository
         }
     }
     
-    /**
-     * Obtient le nom correct de la table transactions
-     */
     private function getTableName(): string
     {
         try {
-            // Vérifier d'abord si 'transactions' existe
+
             $stmt = $this->pdo->query("SELECT to_regclass('public.transactions')");
             $result = $stmt->fetchColumn();
             
@@ -179,7 +164,7 @@ class TransactionRepository
                 return 'transactions';
             }
             
-            // Essayer avec d'autres variantes possibles
+
             $variants = ['transaction', 'public.transaction', 'Transaction', 'TRANSACTIONS'];
             foreach ($variants as $variant) {
                 $stmt = $this->pdo->query("SELECT to_regclass('$variant')");
@@ -190,7 +175,7 @@ class TransactionRepository
                 }
             }
             
-            // Par défaut
+
             return 'transactions';
         } catch (\Exception $e) {
             error_log("Erreur lors de la recherche du nom de la table: " . $e->getMessage());
@@ -198,9 +183,7 @@ class TransactionRepository
         }
     }
     
-    /**
-     * Log les informations sur les colonnes de la table
-     */
+
     private function logTableColumns(string $tableName): void
     {
         try {

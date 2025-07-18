@@ -91,31 +91,34 @@ class Router
         $app = App::getInstance();
         $session = $app->getDependency('session');
         
-        switch ($middlewareName) {
-            case 'auth':
+        $middlewares = [
+            'auth' => function() use ($session) {
                 if (!$session->get('logged_in')) {
                     error_log("Middleware auth: Utilisateur non connecté, redirection vers /login");
                     header('Location: /login');
                     exit;
                 }
-                break;
-                
-            case 'admin':
+            },
+            'admin' => function() use ($session) {
                 if (!$session->get('logged_in') || $session->get('user_type') !== 'admin') {
                     error_log("Middleware admin: Accès non autorisé, redirection vers /");
                     header('Location: /');
                     exit;
                 }
-                break;
-                
-            case 'PasswordHashMiddleware':
+            },
+            'PasswordHashMiddleware' => function() {
                 error_log("Application du middleware PasswordHashMiddleware");
                 if ($_SERVER['REQUEST_METHOD'] === 'POST' && !empty($_POST['password'])) {
                     $_POST = \App\Middlewares\PasswordHashMiddleware::handle($_POST);
                     error_log("Mot de passe traité par le middleware");
                 }
-                break;
-                
+            }
+        ];
+        
+        if (isset($middlewares[$middlewareName])) {
+            $middlewares[$middlewareName]();
+        } else {
+            error_log("Middleware non reconnu: $middlewareName");
         }
     }
 }

@@ -7,9 +7,7 @@ use App\Abstract\AbstractController;
 
 class CompteController extends AbstractController
 {
-    /**
-     * Affiche la liste des comptes de l'utilisateur
-     */
+
     public function index(): void
     {
         try {
@@ -43,9 +41,7 @@ class CompteController extends AbstractController
         }
     }
     
-    /**
-     * Affiche le formulaire de création d'un compte secondaire
-     */
+
     public function create(): void
     {
         try {
@@ -70,9 +66,7 @@ class CompteController extends AbstractController
         }
     }
     
-    /**
-     * Traite la création d'un compte secondaire
-     */
+
     public function store(): void
     {
         try {
@@ -98,9 +92,6 @@ class CompteController extends AbstractController
         }
     }
     
-    /**
-     * Affiche le formulaire pour changer un compte secondaire en compte principal
-     */
     public function changePrincipal(): void
     {
         try {
@@ -129,9 +120,7 @@ class CompteController extends AbstractController
         }
     }
     
-    /**
-     * Traite la demande de changement de compte principal
-     */
+
     public function storeChangePrincipal(): void
     {
         try {
@@ -162,9 +151,7 @@ class CompteController extends AbstractController
         }
     }
     
-    /**
-     * Vérifie l'authentification et redirige si nécessaire
-     */
+
     private function checkAuthentication()
     {
         $user = $this->session->get('user');
@@ -177,9 +164,7 @@ class CompteController extends AbstractController
         return $user;
     }
     
-    /**
-     * Récupère le téléphone de l'utilisateur connecté
-     */
+
     private function getUserTelephone($user)
     {
         $telephone = $this->session->get('user_id');
@@ -200,9 +185,7 @@ class CompteController extends AbstractController
         return (string) $telephone;
     }
     
-    /**
-     * Valide les données du compte secondaire
-     */
+
     private function validateSecondaryAccount()
     {
         $numCompteSecondaire = $_POST['telephone'] ?? null;
@@ -224,9 +207,7 @@ class CompteController extends AbstractController
         return $numCompteSecondaire;
     }
     
-    /**
-     * Récupère le compte sélectionné parmi les comptes secondaires
-     */
+
     private function getSelectedAccount($comptesSecondaires)
     {
         $compteId = isset($_GET['id']) ? $_GET['id'] : null;
@@ -248,9 +229,7 @@ class CompteController extends AbstractController
         return $compteSelectionne;
     }
     
-    /**
-     * Gère les erreurs lors de l'affichage
-     */
+
     private function handleError(\Exception $e, $pageType)
     {
         error_log("Erreur dans CompteController pour $pageType: " . $e->getMessage());
@@ -261,9 +240,7 @@ class CompteController extends AbstractController
         ]);
     }
     
-    /**
-     * Gère les erreurs lors des opérations de stockage
-     */
+
     private function handleStoreError(\Exception $e, $redirectUrl, $operationType)
     {
         error_log("Erreur dans CompteController lors de $operationType: " . $e->getMessage());
@@ -275,7 +252,6 @@ class CompteController extends AbstractController
         exit;
     }
     
-    // Méthodes abstraites requises
     public function update(): void {}
     public function show(): void {}
     public function edit(): void {}

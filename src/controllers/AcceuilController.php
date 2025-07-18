@@ -7,16 +7,13 @@ use App\Abstract\AbstractController;
 
 class AcceuilController extends AbstractController
 {
-    /**
-     * Affiche le tableau de bord principal
-     */
+
     public function index(): void
     {
         try {
             $user = $this->checkAuthentication();
             $telephone = $this->getUserTelephone($user);
             
-            // Récupérer les comptes et transactions récentes
             $comptes = $this->getComptesUtilisateur($telephone);
             $transactions = $this->getTransactionsRecentes($telephone);
             
@@ -35,9 +32,7 @@ class AcceuilController extends AbstractController
         }
     }
     
-    /**
-     * Récupère les comptes d'un utilisateur
-     */
+
     private function getComptesUtilisateur(string $telephone): array
     {
         try {
@@ -49,10 +44,7 @@ class AcceuilController extends AbstractController
             return [];
         }
     }
-    
-    /**
-     * Récupère les transactions récentes d'un utilisateur
-     */
+
     private function getTransactionsRecentes(string $telephone): array
     {
         try {
@@ -67,10 +59,7 @@ class AcceuilController extends AbstractController
         
         return [];
     }
-    
-    /**
-     * Vérifie l'authentification et redirige si nécessaire
-     */
+
     private function checkAuthentication()
     {
         $user = $this->session->get('user');
@@ -83,9 +72,7 @@ class AcceuilController extends AbstractController
         return $user;
     }
     
-    /**
-     * Récupère le téléphone de l'utilisateur connecté
-     */
+
     private function getUserTelephone($user)
     {
         $telephone = $this->session->get('user_id');
@@ -105,10 +92,7 @@ class AcceuilController extends AbstractController
         
         return (string) $telephone;
     }
-    
-    /**
-     * Gère les erreurs lors de l'affichage
-     */
+
     private function handleError(\Exception $e, $pageType)
     {
         error_log("Erreur dans AcceuilController pour $pageType: " . $e->getMessage());
@@ -119,7 +103,6 @@ class AcceuilController extends AbstractController
         ]);
     }
     
-    // Méthodes abstraites requises
     public function create(): void {}
     public function store(): void {}
     public function update(): void {}

@@ -11,7 +11,7 @@
 
 <body class="bg-gray-100">
     <?php include __DIR__ . '/layout/partials/sidebar.layout.php'; ?>
-    
+
     <div class="ml-16 p-6">
         <div class="max-w-4xl mx-auto">
             <div class="flex justify-between items-center py-4 mb-4 border-b border-gray-200">
@@ -22,13 +22,15 @@
                     </a>
                 </div>
             </div>
-            
+
             <?php if (isset($error) && !empty($error)) : ?>
-                <div class="bg-red-100 border-l-4 border-red-500 text-red-700 p-4 mb-4" role="alert">
-                    <p><?= htmlspecialchars($error) ?></p>
-                </div>
+            <div class="bg-red-100 border-l-4 border-red-500 text-red-700 p-4 mb-4" role="alert">
+                <p>
+                    <?= htmlspecialchars($error) ?>
+                </p>
+            </div>
             <?php endif; ?>
-            
+
             <div class="bg-white rounded-lg shadow-md overflow-hidden">
                 <div class="p-6">
                     <form action="/transactions/store" method="POST">
@@ -41,7 +43,7 @@
                                 <option value="transfert">Transfert</option>
                             </select>
                         </div>
-                        
+
                         <div class="mb-4">
                             <label for="compte_telephone" class="block text-sm font-medium text-gray-700 mb-1">Compte source</label>
                             <select id="compte_telephone" name="compte_telephone" class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-orange-500 focus:border-orange-500" required>
@@ -57,28 +59,26 @@
                                 <?php endif; ?>
                             </select>
                         </div>
-                        
+
                         <div id="destination_container" class="mb-4 hidden">
                             <label for="destination_telephone" class="block text-sm font-medium text-gray-700 mb-1">Destination du transfert</label>
-                            <input type="text" id="destination_telephone" name="destination_telephone" class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-orange-500 focus:border-orange-500" 
-                                   pattern="[0-9]{9}" title="Numéro de téléphone à 9 chiffres">
+                            <input type="text" id="destination_telephone" name="destination_telephone" class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-orange-500 focus:border-orange-500" pattern="[0-9]{9}" title="Numéro de téléphone à 9 chiffres">
                             <p class="mt-1 text-sm text-gray-500">Entrez un numéro de téléphone à 9 chiffres pour le destinataire.</p>
                         </div>
-                        
+
                         <div class="mb-4">
                             <label for="montant" class="block text-sm font-medium text-gray-700 mb-1">Montant</label>
                             <div class="mt-1 flex rounded-md shadow-sm">
-                                <input type="number" class="flex-1 min-w-0 block w-full px-3 py-2 rounded-none rounded-l-md border border-gray-300 focus:outline-none focus:ring-orange-500 focus:border-orange-500" 
-                                       id="montant" name="montant" min="0" step="0.01" required>
+                                <input type="number" class="flex-1 min-w-0 block w-full px-3 py-2 rounded-none rounded-l-md border border-gray-300 focus:outline-none focus:ring-orange-500 focus:border-orange-500" id="montant" name="montant" min="0" step="0.01" required>
                                 <span class="inline-flex items-center px-3 py-2 rounded-r-md border border-l-0 border-gray-300 bg-gray-50 text-gray-500">XOF</span>
                             </div>
                         </div>
-                        
-                        <div class="mb-4">
+
+                        <!-- <div class="mb-4">
                             <label for="motif" class="block text-sm font-medium text-gray-700 mb-1">Motif (optionnel)</label>
                             <textarea id="motif" name="motif" rows="3" class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-orange-500 focus:border-orange-500"></textarea>
-                        </div>
-                        
+                        </div> -->
+
                         <div class="flex justify-end">
                             <button type="submit" class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-orange-500 hover:bg-orange-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-orange-500">
                                 <i class='bx bx-send mr-2'></i> Effectuer la transaction
@@ -96,7 +96,7 @@
             const typeSelect = document.getElementById('type');
             const destinationContainer = document.getElementById('destination_container');
             const destinationInput = document.getElementById('destination_telephone');
-            
+
             typeSelect.addEventListener('change', function() {
                 if (this.value === 'transfert') {
                     destinationContainer.classList.remove('hidden');
@@ -109,4 +109,5 @@
         });
     </script>
 </body>
+
 </html>
