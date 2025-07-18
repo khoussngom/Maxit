@@ -1,0 +1,150 @@
+<?php
+namespace App\Abstract;
+use App\Core\Session;
+use App\Core\App;
+
+abstract class AbstractController {
+    protected ?string $layout;
+    protected Session $session;
+
+    public function __construct($layout = null)
+    {
+        $this->session = Session::getInstance();
+        $this->layout = $layout ?? dirname(__DIR__, 3) . '/templates/layout/sidebar-main.layout.php';
+    }
+
+    abstract public function index(): void;
+    abstract public function create(): void;
+    abstract public function store(): void;
+    abstract public function update(): void;
+    abstract public function show(): void;
+    abstract public function edit(): void;
+    abstract public function destroy();
+
+    public function renderHtml(string $view, $data = [])
+    {
+        // Assurons-nous que les variables d'environnement sont disponibles dans les vues
+        $baseUrl = getenv('BASE_URL') ?: '';
+        
+        // Ajoutons les informations communes à toutes les vues
+        $data['baseUrl'] = $baseUrl;
+        
+        // Définir un titre par défaut uniquement si un layout est utilisé
+        if ($this->layout && file_exists($this->layout) && !isset($data['title'])) {
+            $data['title'] = 'Maxit - Plateforme de services financiers';
+        }
+        
+        // Extraction des variables pour les rendre accessibles dans la vue
+        extract($data);
+        
+        // Chargement de la vue
+        ob_start();
+        require_once dirname(__DIR__, 3) . '/templates/' . $view . '.html.php';
+        $contentForLayout = ob_get_clean();
+        
+        // Si un layout est défini, l'utiliser pour encadrer le contenu
+        if ($this->layout && file_exists($this->layout)) {
+            error_log("Utilisation du layout: " . $this->layout . " pour la vue: " . $view);
+            ob_start();
+            require_once $this->layout;
+            $output = ob_get_clean();
+        } else {
+            error_log("Pas de layout utilisé pour la vue: " . $view);
+            $output = $contentForLayout;
+        }
+        
+        echo $output;
+    }
+
+    public function requireAuth(): void
+    {
+        session_start();
+        if (empty($_SESSION['user'])) {
+            header('Location: /login');
+            exit;
+        }
+    }
+
+    public function deconnexion(): void
+    {
+        session_destroy();
+        if (empty($_SESSION['user'])) {
+            header('Location: /login');
+            exit;
+        }
+    }
+    
+    /**
+     * Vérifie si l'utilisateur est authentifié
+     * @return object L'objet utilisateur
+     */
+    protected function checkAuthentication()
+    {
+        $user = $this->session->get('user');
+        
+        if (!$user) {
+            header('Location: /login');
+            exit;
+        }
+        
+        return $user;
+    }
+    
+    /**
+     * Récupère le numéro de téléphone de l'utilisateur
+     * @param mixed $user L'objet utilisateur
+     * @return string Le numéro de téléphone
+     */
+    protected function getUserTelephone($user)
+    {
+        $telephone = $this->session->get('user_id');
+        
+        if (!$telephone && $user && method_exists($user, 'getTelephone')) {
+            $telephone = $user->getTelephone();
+            if ($telephone) {
+                $this->session->set('user_id', $telephone);
+            }
+        }
+        
+        if (empty($telephone)) {
+            error_log('Erreur: Téléphone utilisateur non trouvé dans la session ou l\'objet utilisateur');
+            header('Location: /login');
+            exit;
+        }
+        
+        return (string) $telephone;
+    }
+    
+    /**
+     * Gère les erreurs et affiche une page d'erreur
+     * @param \Exception $e L'exception levée
+     * @param string $pageType Le type de page où l'erreur s'est produite
+     */
+    protected function handleError(\Exception $e, $pageType)
+    {
+        $controllerName = get_class($this);
+        error_log("Erreur dans $controllerName pour $pageType: " . $e->getMessage());
+        error_log("Trace: " . $e->getTraceAsString());
+        
+        $this->renderHtml('error', [
+            'message' => "Une erreur est survenue lors du chargement de la page de $pageType."
+        ]);
+    }
+    
+    /**
+     * Récupère les comptes d'un utilisateur
+     * @param string $telephone Le numéro de téléphone de l'utilisateur
+     * @return array Les comptes de l'utilisateur
+     */
+    protected function getComptesUtilisateur(string $telephone): array
+    {
+        try {
+            $compteRepository = App::getInstance()->getDependency('compteRepository');
+            $comptes = $compteRepository->findByPersonne($telephone);
+            return $comptes;
+        } catch (\Exception $e) {
+            error_log('Erreur lors de la récupération des comptes: ' . $e->getMessage());
+            return [];
+        }
+    }
+}

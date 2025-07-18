@@ -4,12 +4,36 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Connexion - Maxit</title>
+    <title><?= isset($title) ? $title : 'Connexion - Maxit' ?></title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+        }
+        
+        html, body {
+            position: fixed;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+        }
+        
+        @media (max-height: 700px) {
+            .form-container {
+                padding-top: 1rem;
+                padding-bottom: 1rem;
+            }
+            .form-spacing {
+                margin-bottom: 0.75rem;
+            }
+        }
+    </style>
 </head>
 
-<body class="bg-black h-screen w-screen flex items-center justify-center">
-    <div class="flex bg-white rounded-2xl shadow-2xl overflow-hidden w-full h-full">
+<body class="bg-black h-screen w-screen flex items-center justify-center overflow-hidden">
+    <div class="flex bg-white rounded-2xl shadow-2xl overflow-hidden w-full max-h-full">
 
         <div class="flex-1 bg-black flex flex-col items-center justify-center p-8 relative overflow-hidden">
             <img src="/static/logina.png" class="max-w-[80%]" alt="login">
@@ -19,9 +43,9 @@
             </div>
         </div>
 
-        <div class="flex-1 p-8 flex flex-col justify-center">
-            <div class="max-w-sm p-10 rounded-xl shadow-[0_0px_15px_black] mx-auto w-full">
-                <h2 class="text-3xl font-bold text-orange-500 mb-8 text-center">LOGIN</h2>
+        <div class="flex-1 p-4 md:p-8 flex flex-col justify-center overflow-y-auto">
+            <div class="max-w-sm p-6 md:p-8 rounded-xl shadow-[0_0px_15px_black] mx-auto w-full form-container">
+                <h2 class="text-2xl md:text-3xl font-bold text-orange-500 mb-4 md:mb-6 text-center">LOGIN</h2>
 
                 <?php if (isset($success) && $success): ?>
                     <div class="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded relative mb-4">

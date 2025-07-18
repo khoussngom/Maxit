@@ -71,13 +71,100 @@ class CompteRepository extends AbstractRepository
     public function findByTelephone(string $telephone): ?array
     {
         try {
+            error_log("CompteRepository::findByTelephone - Recherche du compte avec téléphone: $telephone");
+            
             $sql = 'SELECT * FROM compte WHERE "telephone" = :telephone';
             $stmt = $this->pdo->prepare($sql);
             $stmt->execute(['telephone' => $telephone]);
             
             $result = $stmt->fetch(\PDO::FETCH_ASSOC);
             
-            return $result ?: null;
+            if ($result) {
+                error_log("CompteRepository::findByTelephone - Compte trouvé avec correspondance exacte: " . json_encode($result));
+                return $result;
+            } 
+            
+            $formattedTel = preg_replace('/[^0-9]/', '', $telephone);
+            if ($formattedTel !== $telephone) {
+                error_log("CompteRepository::findByTelephone - Tentative avec numéro formaté: $formattedTel");
+                
+                $sql = 'SELECT * FROM compte WHERE "telephone" = :telephone';
+                $stmt = $this->pdo->prepare($sql);
+                $stmt->execute(['telephone' => $formattedTel]);
+                
+                $result = $stmt->fetch(\PDO::FETCH_ASSOC);
+                
+                if ($result) {
+                    error_log("CompteRepository::findByTelephone - Compte trouvé avec numéro formaté: " . json_encode($result));
+                    return $result;
+                }
+            }
+            
+            if (strlen($formattedTel) > 9) {
+                $nationalFormat = substr($formattedTel, -9);
+                error_log("CompteRepository::findByTelephone - Tentative avec format national (9 chiffres): $nationalFormat");
+                
+                $sql = 'SELECT * FROM compte WHERE "telephone" = :telephone OR "telephone" LIKE :pattern';
+                $stmt = $this->pdo->prepare($sql);
+                $stmt->execute([
+                    'telephone' => $nationalFormat,
+                    'pattern' => '%' . $nationalFormat
+                ]);
+                
+                $result = $stmt->fetch(\PDO::FETCH_ASSOC);
+                
+                if ($result) {
+                    error_log("CompteRepository::findByTelephone - Compte trouvé avec format national: " . json_encode($result));
+                    return $result;
+                }
+            }
+            
+            if (strlen($formattedTel) > 1 && $formattedTel[0] === '7') {
+                $withCNoFirst7 = 'C' . substr($formattedTel, 1);
+                error_log("CompteRepository::findByTelephone - Tentative en remplaçant le premier 7 par C: $withCNoFirst7");
+                
+                $sql = 'SELECT * FROM compte WHERE "telephone" = :telephone';
+                $stmt = $this->pdo->prepare($sql);
+                $stmt->execute(['telephone' => $withCNoFirst7]);
+                
+                $result = $stmt->fetch(\PDO::FETCH_ASSOC);
+                
+                if ($result) {
+                    error_log("CompteRepository::findByTelephone - Compte trouvé avec format C + numéro sans premier 7: " . json_encode($result));
+                    return $result;
+                }
+            }
+            
+
+            $withCPrefix = 'C' . $telephone;
+            error_log("CompteRepository::findByTelephone - Tentative avec préfixe C: $withCPrefix");
+            
+            $sql = 'SELECT * FROM compte WHERE "telephone" = :telephone';
+            $stmt = $this->pdo->prepare($sql);
+            $stmt->execute(['telephone' => $withCPrefix]);
+            
+            $result = $stmt->fetch(\PDO::FETCH_ASSOC);
+            
+            if ($result) {
+                error_log("CompteRepository::findByTelephone - Compte trouvé avec préfixe C: " . json_encode($result));
+                return $result;
+            }
+            
+            error_log("CompteRepository::findByTelephone - Aucun compte trouvé avec ce numéro après différentes tentatives");
+            
+            $debugSql = 'SELECT COUNT(*) as count FROM compte';
+            $debugStmt = $this->pdo->prepare($debugSql);
+            $debugStmt->execute();
+            $totalCount = $debugStmt->fetch(\PDO::FETCH_ASSOC)['count'];
+            error_log("CompteRepository::findByTelephone - Nombre total de comptes dans la base: $totalCount");
+            
+            $sampleSql = 'SELECT "telephone" FROM compte LIMIT 5';
+            $sampleStmt = $this->pdo->prepare($sampleSql);
+            $sampleStmt->execute();
+            $samples = $sampleStmt->fetchAll(\PDO::FETCH_COLUMN);
+            error_log("CompteRepository::findByTelephone - Exemples de numéros dans la base: " . implode(", ", $samples));
+            
+            return null;
         } catch (\PDOException $e) {
             error_log("Erreur lors de la récupération du compte : " . $e->getMessage());
             return null;

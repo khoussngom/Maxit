@@ -32,19 +32,19 @@ class TransactionService
     public function createTransaction(string $compteTelephone, float $montant, string $type, string $motif = '', array $additionalData = []): bool
     {
         try {
-            if (!in_array($type, ['depot', 'retrait', 'paiement', 'transfert'])) {
+            if (!in_array($type, ['depot', 'retrait', 'paiement', 'transfert', 'annulation'])) {
                 throw new \InvalidArgumentException("Type de transaction invalide");
             }
             
             error_log("Préparation des données pour création de transaction - Compte: {$compteTelephone}, Montant: {$montant}, Type: {$type}");
             
-
             $data = [
                 'compte_telephone' => $compteTelephone,
                 'montant' => $montant,
                 'type' => $type,
                 'date' => date('Y-m-d'),
-                'motif' => $motif ?: null
+                'motif' => $motif ?: null,
+                'etat' => $additionalData['etat'] ?? 'completed'  // Par défaut, les transactions sont complétées
             ];
             
             error_log("Données de transaction: " . json_encode($data));
@@ -373,6 +373,101 @@ class TransactionService
             }
         } catch (\Exception $e) {
             error_log("Erreur lors du transfert: " . $e->getMessage());
+            error_log("Trace: " . $e->getTraceAsString());
+            return false;
+        }
+    }
+    
+    /**
+     * Annule une transaction de dépôt si elle est encore en attente
+     */
+    public function annulerDepot(int $transactionId): bool
+    {
+        $transactionStarted = false;
+        
+        try {
+            // Récupérer la transaction
+            $transaction = $this->transactionRepository->findById('transactions', (string)$transactionId);
+            
+            if (!$transaction) {
+                throw new \Exception("Transaction non trouvée");
+            }
+            
+            // Vérifier que c'est bien un dépôt
+            if ($transaction['type'] !== 'depot') {
+                throw new \Exception("Seules les transactions de type dépôt peuvent être annulées");
+            }
+            
+            // Vérifier l'état de la transaction
+            if ($transaction['etat'] === 'canceled') {
+                throw new \Exception("Cette transaction a déjà été annulée");
+            }
+            
+            // Récupérer le compte
+            $app = \App\Core\App::getInstance();
+            $compteRepository = $app->getDependency('compteRepository');
+            $compte = $compteRepository->findByTelephone($transaction['compte_telephone']);
+            
+            if (!$compte) {
+                throw new \Exception("Compte associé à la transaction non trouvé");
+            }
+            
+            // Commencer une transaction BD
+            if (method_exists($compteRepository, 'beginTransaction')) {
+                $compteRepository->beginTransaction();
+                $transactionStarted = true;
+                error_log("Transaction BD démarrée pour annulation de dépôt");
+            }
+            
+            try {
+                // 1. Mettre à jour l'état de la transaction
+                $updated = $this->transactionRepository->updateState($transactionId, 'canceled');
+                if (!$updated) {
+                    throw new \Exception("Erreur lors de la mise à jour de l'état de la transaction");
+                }
+                
+                // 2. Mettre à jour le solde du compte (soustraire le montant)
+                $nouveauSolde = (float)$compte['solde'] - (float)$transaction['montant'];
+                if ($nouveauSolde < 0) {
+                    throw new \Exception("Le solde serait négatif après annulation, opération impossible");
+                }
+                
+                $soldeUpdated = $compteRepository->updateSolde($compte['telephone'], $nouveauSolde);
+                
+                if (!$soldeUpdated) {
+                    throw new \Exception("Erreur lors de la mise à jour du solde");
+                }
+                
+                // 3. Créer une transaction d'annulation
+                $motif = "Annulation du dépôt #" . $transactionId;
+                $transactionCreated = $this->createTransaction(
+                    $compte['telephone'], 
+                    $transaction['montant'], 
+                    'annulation', 
+                    $motif,
+                    ['source_transaction_id' => $transactionId]
+                );
+                
+                if (!$transactionCreated) {
+                    throw new \Exception("Erreur lors de l'enregistrement de la transaction d'annulation");
+                }
+                
+                // Valider la transaction
+                if ($transactionStarted && method_exists($compteRepository, 'commit')) {
+                    $compteRepository->commit();
+                    error_log("Transaction BD validée pour annulation de dépôt");
+                }
+                
+                return true;
+            } catch (\Exception $e) {
+                if ($transactionStarted && method_exists($compteRepository, 'rollBack')) {
+                    $compteRepository->rollBack();
+                    error_log("Transaction BD annulée pour annulation de dépôt: " . $e->getMessage());
+                }
+                throw $e;
+            }
+        } catch (\Exception $e) {
+            error_log("Erreur lors de l'annulation du dépôt: " . $e->getMessage());
             error_log("Trace: " . $e->getTraceAsString());
             return false;
         }

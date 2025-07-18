@@ -1,0 +1,184 @@
+<?php
+
+namespace App\Controllers;
+
+use App\Core\App;
+use App\Abstract\AbstractController;
+
+class TransactionController extends AbstractController
+{
+    public function index(): void
+    {
+        try {
+            $user = $this->checkAuthentication();
+            $telephone = $this->getUserTelephone($user);
+            
+            $page = isset($_GET['page']) ? max(1, (int)$_GET['page']) : 1;
+            $perPage = isset($_GET['perPage']) ? (int)$_GET['perPage'] : 7;
+            
+            $filters = $this->getTransactionFilters();
+            
+            $comptes = $this->getComptesUtilisateur($telephone);
+            $result = $this->getTransactionsUtilisateur($telephone, $filters, $page, $perPage);
+            
+            $success = $this->session->getFlash('success');
+            $error = $this->session->getFlash('error');
+            
+            $this->renderHtml('transactions', [
+                'user' => $user,
+                'comptes' => $comptes ?? [],
+                'transactions' => $result['transactions'] ?? [],
+                'pagination' => $result['pagination'] ?? [],
+                'filters' => $filters,
+                'success' => $success,
+                'error' => $error
+            ]);
+        } catch (\Exception $e) {
+            $this->handleError($e, 'transactions');
+        }
+    }
+    
+    public function create(): void
+    {
+        try {
+            $user = $this->checkAuthentication();
+            $telephone = $this->getUserTelephone($user);
+            
+            $app = App::getInstance();
+            $compteRepository = $app->getDependency('compteRepository');
+            $comptes = $compteRepository->findByPersonne($telephone);
+            
+            $error = $this->session->getFlash('error');
+            
+            $this->renderHtml('create-transaction', [
+                'user' => $user,
+                'comptes' => $comptes ?? [],
+                'error' => $error
+            ]);
+        } catch (\Exception $e) {
+            $this->handleError($e, 'création de transaction');
+        }
+    }
+    
+    public function store(): void
+    {
+        // Code pour traiter l'enregistrement d'une nouvelle transaction
+    }
+    
+    public function show(): void 
+    {
+        try {
+            $user = $this->checkAuthentication();
+            $transactionId = $_GET['id'] ?? null;
+            
+            if (!$transactionId) {
+                $this->session->setFlash('error', 'ID de transaction manquant');
+                header('Location: /transactions');
+                exit;
+            }
+            
+            // Récupérer la transaction
+            $app = App::getInstance();
+            $transactionRepository = $app->getDependency('transactionRepository');
+            $transaction = $transactionRepository->findById($transactionId);
+            
+            if (!$transaction) {
+                $this->session->setFlash('error', 'Transaction introuvable');
+                header('Location: /transactions');
+                exit;
+            }
+            
+            $this->renderHtml('transaction-details', [
+                'user' => $user,
+                'transaction' => $transaction
+            ]);
+        } catch (\Exception $e) {
+            $this->handleError($e, 'détails de transaction');
+        }
+    }
+    
+    public function update(): void {}
+    
+    public function edit(): void {}
+    
+    public function destroy() { return null; }
+    
+    // Méthodes auxiliaires
+    private function getTransactionFilters()
+    {
+        return [
+            'type' => $_GET['type'] ?? null,
+            'compte' => $_GET['compte'] ?? null,
+            'dateDebut' => $_GET['dateDebut'] ?? null,
+            'dateFin' => $_GET['dateFin'] ?? null,
+            'montantMin' => $_GET['montantMin'] ?? null,
+            'montantMax' => $_GET['montantMax'] ?? null,
+            'statut' => $_GET['statut'] ?? null
+        ];
+    }
+    
+    private function getComptesUtilisateur(string $telephone): array
+    {
+        try {
+            $compteRepository = App::getInstance()->getDependency('compteRepository');
+            $comptes = $compteRepository->findByPersonne($telephone);
+            return $comptes;
+        } catch (\Exception $e) {
+            error_log('Erreur lors de la récupération des comptes: ' . $e->getMessage());
+            return [];
+        }
+    }
+    
+    private function getTransactionsUtilisateur(string $telephone, array $filters, int $page, int $perPage): array
+    {
+        try {
+            $transactionRepository = App::getInstance()->getDependency('transactionRepository');
+            return $transactionRepository->findWithPaginationAndFilters($telephone, $filters, $page, $perPage);
+        } catch (\Exception $e) {
+            error_log('Erreur lors de la récupération des transactions: ' . $e->getMessage());
+            return ['transactions' => [], 'pagination' => []];
+        }
+    }
+    
+    private function checkAuthentication()
+    {
+        $user = $this->session->get('user');
+        
+        if (!$user) {
+            header('Location: /login');
+            exit;
+        }
+        
+        return $user;
+    }
+    
+    private function getUserTelephone($user)
+    {
+        $telephone = $this->session->get('user_id');
+        
+        if (!$telephone && $user && method_exists($user, 'getTelephone')) {
+            $telephone = $user->getTelephone();
+            if ($telephone) {
+                $this->session->set('user_id', $telephone);
+            }
+        }
+        
+        if (empty($telephone)) {
+            error_log('Erreur: Téléphone utilisateur non trouvé dans la session ou l\'objet utilisateur');
+            header('Location: /login');
+            exit;
+        }
+        
+        return (string) $telephone;
+    }
+    
+    private function handleError(\Exception $e, $pageType)
+    {
+        error_log("Erreur dans TransactionController pour $pageType: " . $e->getMessage());
+        error_log("Trace: " . $e->getTraceAsString());
+        
+        $this->renderHtml('error', [
+            'message' => "Une erreur est survenue lors du chargement de la page de $pageType."
+        ]);
+    }
+}

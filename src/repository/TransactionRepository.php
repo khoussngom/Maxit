@@ -4,13 +4,15 @@ namespace App\Repository;
 
 use App\Entity\TransactionEntity;
 
-class TransactionRepository
+class TransactionRepository extends \App\Abstract\AbstractRepository
 {
-    private \PDO $pdo;
-    
-    public function __construct(\PDO $pdo)
+    public function __construct(\PDO $pdo = null)
     {
-        $this->pdo = $pdo;
+        if ($pdo !== null) {
+            $this->pdo = $pdo;
+        } else {
+            parent::__construct();
+        }
     }
     
     public function create(array $data): ?int
@@ -18,7 +20,6 @@ class TransactionRepository
         try {
             error_log("Création d'une transaction: " . json_encode($data));
             
-
             $requiredFields = ['compte_telephone', 'montant', 'type'];
             foreach ($requiredFields as $field) {
                 if (!isset($data[$field])) {
@@ -31,7 +32,13 @@ class TransactionRepository
                 $data['date'] = date('Y-m-d');
             }
             
-            $validColumns = ['id', 'montant', 'compte_telephone', 'type', 'date', 'motif', 'destination_telephone', 'source_telephone'];
+            // Ajout du champ status pour les transactions en attente
+            if (!isset($data['status'])) {
+                $data['status'] = 'complete';
+            }
+            
+            $validColumns = ['id', 'montant', 'compte_telephone', 'type', 'date', 'motif', 
+                           'destination_telephone', 'source_telephone', 'status'];
             $filteredData = array_intersect_key($data, array_flip($validColumns));
             
             $columns = implode(', ', array_keys($filteredData));
@@ -229,6 +236,128 @@ class TransactionRepository
         }
     }
     
+    public function findById(string $table, string $id): ?array
+    {
+        if ($table !== 'transactions') {
+            // Appel à la méthode parent pour les autres tables
+            return parent::findById($table, $id);
+        }
+        
+        try {
+            $sql = "SELECT * FROM transactions WHERE id = :id";
+            $stmt = $this->pdo->prepare($sql);
+            $stmt->execute(['id' => (int)$id]);
+            
+            $result = $stmt->fetch(\PDO::FETCH_ASSOC);
+            return $result ?: null;
+        } catch (\Exception $e) {
+            error_log("Erreur lors de la recherche de la transaction par ID: " . $e->getMessage());
+            return null;
+        }
+    }
+    
+    public function findByCompte(string $compteTelephone, int $limit = 0): array
+    {
+        try {
+            $sql = "SELECT * FROM transactions WHERE compte_telephone = :compte_telephone ORDER BY date DESC";
+            
+            if ($limit > 0) {
+                $sql .= " LIMIT :limit";
+            }
+            
+            $stmt = $this->pdo->prepare($sql);
+            $stmt->bindValue(':compte_telephone', $compteTelephone);
+            
+            if ($limit > 0) {
+                $stmt->bindValue(':limit', $limit, \PDO::PARAM_INT);
+            }
+            
+            $stmt->execute();
+            
+            return $stmt->fetchAll(\PDO::FETCH_ASSOC);
+        } catch (\Exception $e) {
+            error_log("Erreur lors de la recherche des transactions par compte: " . $e->getMessage());
+            return [];
+        }
+    }
+    
+    public function findByCompteWithFilters(
+        string $compteTelephone,
+        ?string $dateDebut = null,
+        ?string $dateFin = null,
+        ?string $type = null
+    ): array {
+        try {
+            $params = ['compte_telephone' => $compteTelephone];
+            $conditions = ['compte_telephone = :compte_telephone'];
+            
+            if ($dateDebut) {
+                $conditions[] = 'date >= :date_debut';
+                $params['date_debut'] = $dateDebut;
+            }
+            
+            if ($dateFin) {
+                $conditions[] = 'date <= :date_fin';
+                $params['date_fin'] = $dateFin;
+            }
+            
+            if ($type) {
+                $conditions[] = 'type = :type';
+                $params['type'] = $type;
+            }
+            
+            $whereClause = implode(' AND ', $conditions);
+            
+            $sql = "SELECT * FROM transactions WHERE $whereClause ORDER BY date DESC";
+            
+            $stmt = $this->pdo->prepare($sql);
+            $stmt->execute($params);
+            
+            return $stmt->fetchAll(\PDO::FETCH_ASSOC);
+        } catch (\Exception $e) {
+            error_log("Erreur lors de la recherche des transactions avec filtres: " . $e->getMessage());
+            return [];
+        }
+    }
+    
+    public function updateStatus(int $id, string $status): bool
+    {
+        try {
+            $sql = "UPDATE transactions SET status = :status WHERE id = :id";
+            $stmt = $this->pdo->prepare($sql);
+            $stmt->execute([
+                'id' => $id,
+                'status' => $status
+            ]);
+            
+            return $stmt->rowCount() > 0;
+        } catch (\Exception $e) {
+            error_log("Erreur lors de la mise à jour du statut de la transaction: " . $e->getMessage());
+            return false;
+        }
+    }
+    
+    public function findPendingDeposits(string $telephone): array
+    {
+        try {
+            $sql = "SELECT t.* 
+                   FROM transactions t
+                   JOIN compte c ON t.compte_telephone = c.telephone
+                   WHERE c.personne_telephone = :telephone
+                   AND t.type = 'depot'
+                   AND t.status = 'pending'
+                   ORDER BY t.date DESC";
+            
+            $stmt = $this->pdo->prepare($sql);
+            $stmt->execute(['telephone' => $telephone]);
+            
+            return $stmt->fetchAll(\PDO::FETCH_ASSOC);
+        } catch (\Exception $e) {
+            error_log("Erreur lors de la recherche des dépôts en attente: " . $e->getMessage());
+            return [];
+        }
+    }
+    
     public function findRecentByPersonne($personneTelephone, int $limit = 10): array
     {
         try {
@@ -330,6 +459,26 @@ class TransactionRepository
                     'totalPages' => 0
                 ]
             ];
+        }
+    }
+    
+    /**
+     * Met à jour l'état d'une transaction
+     */
+    public function updateState(int $transactionId, string $state): bool
+    {
+        try {
+            $sql = "UPDATE transactions SET etat = :state WHERE id = :id";
+            $stmt = $this->pdo->prepare($sql);
+            $stmt->execute([
+                'id' => $transactionId,
+                'state' => $state
+            ]);
+            
+            return $stmt->rowCount() > 0;
+        } catch (\PDOException $e) {
+            error_log("Erreur lors de la mise à jour de l'état de la transaction: " . $e->getMessage());
+            return false;
         }
     }
 }

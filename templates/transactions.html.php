@@ -29,6 +29,9 @@
             <div class="flex items-center justify-between mb-6">
                 <h1 class="text-2xl font-bold text-gray-800">Toutes mes transactions</h1>
                 <div class="flex space-x-3">
+                    <a href="/transactions/depot" class="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-white bg-cyan-600 hover:bg-cyan-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-cyan-500">
+                        <i class='bx bx-plus mr-2'></i> Nouveau dépôt
+                    </a>
                     <a href="/transactions/create" class="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-white bg-orange-500 hover:bg-orange-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-orange-500">
                         <i class='bx bx-plus mr-2'></i> Nouvelle transaction
                     </a>
@@ -107,8 +110,9 @@
                 <div class="grid grid-cols-12 text-white">
                     <div class="col-span-1 text-orange-500 font-semibold">#</div>
                     <div class="col-span-3 text-orange-500 font-semibold">Date</div>
-                    <div class="col-span-4 text-orange-500 font-semibold">Type</div>
-                    <div class="col-span-4 text-orange-500 font-semibold text-right">Montant</div>
+                    <div class="col-span-3 text-orange-500 font-semibold">Type</div>
+                    <div class="col-span-3 text-orange-500 font-semibold text-right">Montant</div>
+                    <div class="col-span-2 text-orange-500 font-semibold text-right">Actions</div>
                 </div>
             </div>
 
@@ -119,16 +123,31 @@
                         $borderClass = $transaction['type'] === 'depot' ? 'border-l-4 border-l-cyan-500' : 'border-l-4 border-l-orange-500';
                         $numero = ($pagination['currentPage'] - 1) * $pagination['perPage'] + $index + 1;
                         $date = date('d/m/Y H:i', strtotime($transaction['date']));
+                        $canCancel = $transaction['type'] === 'depot' && (!isset($transaction['etat']) || $transaction['etat'] !== 'canceled');
                     ?>
                         <div class="bg-white rounded-xl p-4 shadow-sm <?= $borderClass ?>">
                             <div class="grid grid-cols-12 items-center">
                                 <div class="col-span-1 text-gray-500"><?= $numero ?></div>
                                 <div class="col-span-3 text-gray-800"><?= $date ?></div>
-                                <div class="col-span-4 font-medium <?= $typeClass ?>">
+                                <div class="col-span-3 font-medium <?= $typeClass ?>">
                                     <?= htmlspecialchars(ucfirst($transaction['type'])) ?>
+                                    <?php if (isset($transaction['etat']) && $transaction['etat'] === 'canceled'): ?>
+                                        <span class="ml-2 text-xs text-gray-500">(Annulée)</span>
+                                    <?php endif; ?>
                                 </div>
-                                <div class="col-span-4 font-medium text-right <?= $typeClass ?>">
+                                <div class="col-span-3 font-medium text-right <?= $typeClass ?>">
                                     <?= number_format($transaction['montant'], 0, ',', ' ') ?> FCFA
+                                </div>
+                                <div class="col-span-2 text-right">
+                                    <?php if ($canCancel): ?>
+                                        <form action="/transactions/annuler-depot" method="POST" class="inline">
+                                            <input type="hidden" name="transaction_id" value="<?= $transaction['id'] ?>">
+                                            <button type="submit" onclick="return confirm('Êtes-vous sûr de vouloir annuler ce dépôt ?')" 
+                                                class="text-red-600 hover:text-red-900 bg-red-100 hover:bg-red-200 px-2 py-1 rounded text-sm">
+                                                <i class='bx bx-x-circle'></i> Annuler
+                                            </button>
+                                        </form>
+                                    <?php endif; ?>
                                 </div>
                             </div>
                         </div>

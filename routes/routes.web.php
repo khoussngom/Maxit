@@ -90,4 +90,37 @@ return $routes = [
         'action' => 'storeChangePrincipal',
         'method' => 'POST'
     ],
+    // Routes pour les dépôts
+    'GET:/transactions/depot' => [
+        'controller' => TransactionController::class,
+        'middlewares' => ['auth'],
+        'action' => 'showDepotForm',
+        'method' => 'GET'
+    ],
+    'POST:/transactions/depot' => [
+        'controller' => TransactionController::class,
+        'middlewares' => ['auth'],
+        'action' => 'processDepot',
+        'method' => 'POST'
+    ],
+    // Route pour l'annulation d'un dépôt
+    'POST:/transactions/annuler-depot' => [
+        'controller' => TransactionController::class,
+        'middlewares' => ['auth'],
+        'action' => 'annulerDepot',
+        'method' => 'POST'
+    ],
+    // Route pour la recherche de compte (US6)
+    'GET:/comptes/recherche' => [
+        'controller' => CompteController::class,
+        'middlewares' => ['auth'],
+        'action' => 'recherche',
+        'method' => 'GET'
+    ],
+    'POST:/comptes/recherche' => [
+        'controller' => CompteController::class,
+        'middlewares' => ['auth'],
+        'action' => 'recherche',
+        'method' => 'POST'
+    ],
 ];

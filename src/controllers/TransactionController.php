@@ -1,6 +1,13 @@
 <?php
 
-namespace App\Controllers;
+name    public function index(): void
+    {
+        try {
+            $user = $this->checkAuthentication();
+            $telephone = $this->getUserTelephone($user);
+            
+            $page = isset($_GET['page']) ? max(1, (int)$_GET['page']) : 1;
+            $perPage = isset($_GET['perPage']) ? (int)$_GET['perPage'] : 7;lers;
 
 use App\Core\App;
 use App\Abstract\AbstractController;
@@ -16,8 +23,16 @@ class TransactionController extends AbstractController
             $telephone = $this->getUserTelephone($user);
             
 
-            $page = isset($_GET['page']) ? max(1, (int)$_GET['page']) : 1;
-            $perPage = isset($_GET['perPage']) ? (int)$_GET['perPage'] : 7;
+            $page = isset($_GET['page']) ? max(1, (int)$_GET['page']) :            // Récupérer la transaction
+            $app = \App\Core\App::getInstance();
+            $transactionRepository = $app->getDependency('transactionRepository');
+            $transaction = $transactionRepository->findById('transactions', (string)$transactionId);
+            
+            if (!$transaction) {
+                $this->session->setFlash('error', 'Transaction introuvable');
+                header('Location: /transactions');
+                exit;
+            }      $perPage = isset($_GET['perPage']) ? (int)$_GET['perPage'] : 7;
             $perPage = in_array($perPage, [7, 15, 25, 50]) ? $perPage : 7;
             
             $filters = $this->getTransactionFilters();
@@ -300,4 +315,136 @@ class TransactionController extends AbstractController
     public function show(): void {}
     public function edit(): void {}
     public function destroy() { return null; }
+    
+
+    public function showDepotForm(): void
+    {
+        try {
+            $user = $this->checkAuthentication();
+            $telephone = $this->getUserTelephone($user);
+            
+            $app = App::getInstance();
+            $compteRepository = $app->getDependency('compteRepository');
+            $comptes = $compteRepository->findByPersonne($telephone);
+            
+            $error = $this->session->getFlash('error');
+            $success = $this->session->getFlash('success');
+            
+            $this->renderHtml('transactions/depot', [
+                'user' => $user,
+                'comptes' => $comptes,
+                'error' => $error,
+                'success' => $success
+            ]);
+        } catch (\Exception $e) {
+            $this->handleError($e, 'formulaire de dépôt');
+        }
+    }
+    
+    /**
+     * Traite une demande de dépôt
+     */
+    public function processDepot(): void
+    {
+        try {
+            $user = $this->checkAuthentication();
+            $telephone = $this->getUserTelephone($user);
+            
+
+            if (empty($_POST['compte_telephone'])) {
+                $this->session->setFlash('error', 'Le compte est obligatoire');
+                header('Location: /transactions/depot');
+                exit;
+            }
+            
+            $montant = isset($_POST['montant']) ? (float) $_POST['montant'] : 0;
+            if ($montant <= 0) {
+                $this->session->setFlash('error', 'Le montant doit être supérieur à zéro');
+                header('Location: /transactions/depot');
+                exit;
+            }
+            
+            $compteId = $_POST['compte_telephone'];
+            $motif = $_POST['motif'] ?? 'Dépôt';
+            
+
+            $app = App::getInstance();
+            $compteRepository = $app->getDependency('compteRepository');
+            $compte = $compteRepository->findByTelephone($compteId);
+            
+            if (!$compte || $compte['personne_telephone'] !== $telephone) {
+                $this->session->setFlash('error', 'Vous n\'avez pas accès à ce compte');
+                header('Location: /transactions/depot');
+                exit;
+            }
+            
+            // Effectuer le dépôt
+            $transactionService = $app->getDependency('transactionService');
+            $success = $transactionService->effectuerDepot($compteId, $montant, $motif);
+            
+            if ($success) {
+                $this->session->setFlash('success', 'Le dépôt a été effectué avec succès');
+            } else {
+                $this->session->setFlash('error', 'Une erreur est survenue lors du dépôt');
+            }
+            
+            header('Location: /transactions');
+            exit;
+        } catch (\Exception $e) {
+            $this->handleStoreError($e, 'transactions/depot', 'le dépôt');
+        }
+    }
+    
+
+    public function annulerDepot(): void
+    {
+        try {
+            $user = $this->checkAuthentication();
+            
+
+            $transactionId = isset($_POST['transaction_id']) ? (int) $_POST['transaction_id'] : 0;
+            if ($transactionId <= 0) {
+                $this->session->setFlash('error', 'ID de transaction invalide');
+                header('Location: /transactions');
+                exit;
+            }
+            
+
+            $app = App::getInstance();
+            $transactionRepository = $app->getDependency('transactionRepository');
+            $transaction = $transactionRepository->findById('transactions', (string)$transactionId);
+            
+            if (!$transaction) {
+                $this->session->setFlash('error', 'Transaction introuvable');
+                header('Location: /transactions');
+                exit;
+            }
+            
+
+            $telephone = $this->getUserTelephone($user);
+            $compteRepository = $app->getDependency('compteRepository');
+            $compte = $compteRepository->findByTelephone($transaction['compte_telephone']);
+            
+            if (!$compte || $compte['personne_telephone'] !== $telephone) {
+                $this->session->setFlash('error', 'Vous n\'avez pas accès à cette transaction');
+                header('Location: /transactions');
+                exit;
+            }
+            
+
+            $transactionService = $app->getDependency('transactionService');
+            $success = $transactionService->annulerDepot($transactionId);
+            
+            if ($success) {
+                $this->session->setFlash('success', 'Le dépôt a été annulé avec succès');
+            } else {
+                $this->session->setFlash('error', 'Une erreur est survenue lors de l\'annulation du dépôt');
+            }
+            
+            header('Location: /transactions');
+            exit;
+        } catch (\Exception $e) {
+            $this->handleStoreError($e, 'transactions', 'l\'annulation du dépôt');
+        }
+    }
 }
