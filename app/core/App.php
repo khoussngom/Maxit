@@ -6,12 +6,12 @@ use App\Core\Session;
 use App\Core\Database;
 use App\Services\CompteService;
 use App\Services\EnvoyerMessage;
+use Symfony\Component\Yaml\Yaml;
 use App\Services\SecurityService;
 use App\Repository\CompteRepository;
 use App\Services\TransactionService;
 use App\Repository\PersonneRepository;
 use App\Repository\TransactionRepository;
-use Symfony\Component\Yaml\Yaml;
 
 class App
 {
@@ -42,7 +42,7 @@ class App
         $this->isInitializingDependencies = true;
         
         try {
-            // Essayer de charger les dépendances à partir du fichier services.yml
+
             $servicesFile = dirname(__DIR__) . '/config/services.yml';
             if (file_exists($servicesFile)) {
                 error_log("Chargement des services depuis: " . $servicesFile);
@@ -69,12 +69,11 @@ class App
                 throw new \Exception("Format du fichier services.yml invalide");
             }
             
-            // Remplacer les paramètres
+
             $parameters = [];
             if (isset($services['parameters']) && is_array($services['parameters'])) {
                 $parameters = $services['parameters'];
             } else {
-                // Paramètres par défaut pour la base de données
                 $parameters = [
                     'db.dsn' => getenv('DB_DSN'),
                     'db.username' => getenv('DB_USERNAME'),
@@ -82,7 +81,6 @@ class App
                 ];
             }
             
-            // Créer les services dans l'ordre de déclaration
             foreach ($services['services'] as $name => $serviceConfig) {
                 $this->createService($name, $serviceConfig, $parameters);
             }
@@ -96,7 +94,7 @@ class App
     
     private function createService(string $name, array $serviceConfig, array $parameters): void
     {
-        // Vérifier si le service existe déjà
+
         if (isset($this->dependencies[$name])) {
             return;
         }
@@ -108,14 +106,14 @@ class App
         $className = $serviceConfig['class'];
         $arguments = $serviceConfig['arguments'] ?? [];
         
-        // Résoudre les arguments
+
         $resolvedArguments = [];
         foreach ($arguments as $argument) {
             if (is_string($argument) && strpos($argument, '@') === 0) {
-                // Référence à un autre service
+
                 $serviceName = substr($argument, 1);
                 if (!isset($this->dependencies[$serviceName])) {
-                    // Si le service n'existe pas encore, le créer récursivement
+
                     if (isset($services['services'][$serviceName])) {
                         $this->createService($serviceName, $services['services'][$serviceName], $parameters);
                     } else {
@@ -124,19 +122,19 @@ class App
                 }
                 $resolvedArguments[] = $this->dependencies[$serviceName];
             } elseif (is_string($argument) && strpos($argument, '%') === 0 && substr($argument, -1) === '%') {
-                // Paramètre
+
                 $paramName = substr($argument, 1, -1);
                 $resolvedArguments[] = $parameters[$paramName] ?? null;
             } else {
-                // Valeur directe
+
                 $resolvedArguments[] = $argument;
             }
         }
         
-        // Créer l'instance
+
         try {
             if ($className === 'PDO') {
-                // Cas spécial pour PDO
+
                 $this->dependencies[$name] = new \PDO(...$resolvedArguments);
             } else {
                 $reflection = new \ReflectionClass($className);

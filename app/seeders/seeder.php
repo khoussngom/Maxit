@@ -2,8 +2,8 @@
 
 namespace App\Seeders;
 
-use App\Core\Database;
 use App\Core\App;
+use App\Core\Database;
 
 class Seeder
 {
@@ -20,13 +20,13 @@ class Seeder
         try {
             $this->pdo->beginTransaction();
             
-            // Seeder les personnes
+
             $this->seedPersonnes();
             
-            // Seeder les comptes
+
             $this->seedComptes();
             
-            // Seeder les transactions
+
             $this->seedTransactions();
             
             $this->pdo->commit();
@@ -40,14 +40,14 @@ class Seeder
 
     private function seedPersonnes(): void
     {
-        // Vérifier si des personnes existent déjà
+
         $stmt = $this->pdo->query("SELECT COUNT(*) FROM personne");
         if ((int)$stmt->fetchColumn() > 0) {
             error_log("Des personnes existent déjà, pas besoin de seeder");
             return;
         }
 
-        // Création d'un commercial
+
         $commercialData = [
             'telephone' => '770000000',
             'numero_identite' => 'COM123456',
@@ -64,7 +64,7 @@ class Seeder
         $this->insertPersonne($commercialData);
         error_log("Commercial ajouté: " . $commercialData['telephone']);
 
-        // Création de 5 clients
+
         $clients = [
             [
                 'telephone' => '771111111',
@@ -129,32 +129,31 @@ class Seeder
 
     private function seedComptes(): void
     {
-        // Vérifier si des comptes existent déjà
+
         $stmt = $this->pdo->query("SELECT COUNT(*) FROM compte");
         if ((int)$stmt->fetchColumn() > 0) {
             error_log("Des comptes existent déjà, pas besoin de seeder");
             return;
         }
 
-        // Récupérer tous les clients
+
         $stmt = $this->pdo->query("SELECT telephone FROM personne WHERE typePersonne = 'client'");
         $clients = $stmt->fetchAll(\PDO::FETCH_COLUMN);
 
         foreach ($clients as $telephone) {
-            // Compte principal
+
             $this->insertCompte([
                 'telephone' => 'C' . substr($telephone, 1),
-                'solde' => 100000, // 100 000 FCFA de départ
+                'solde' => 100000,
                 'personne_telephone' => $telephone,
                 'typecompte' => 'principal'
             ]);
             error_log("Compte principal ajouté pour: " . $telephone);
 
-            // Compte secondaire (pour certains clients)
             if (rand(0, 1) === 1) {
                 $this->insertCompte([
                     'telephone' => 'S' . substr($telephone, 1),
-                    'solde' => 50000, // 50 000 FCFA de départ
+                    'solde' => 50000,
                     'personne_telephone' => $telephone,
                     'typecompte' => 'secondaire'
                 ]);
@@ -175,21 +174,21 @@ class Seeder
 
     private function seedTransactions(): void
     {
-        // Vérifier si des transactions existent déjà
+
         $stmt = $this->pdo->query("SELECT COUNT(*) FROM transactions");
         if ((int)$stmt->fetchColumn() > 0) {
             error_log("Des transactions existent déjà, pas besoin de seeder");
             return;
         }
 
-        // Récupérer tous les comptes
+
         $stmt = $this->pdo->query("SELECT telephone FROM compte");
         $comptes = $stmt->fetchAll(\PDO::FETCH_COLUMN);
 
-        // Types de transactions
+
         $types = ['depot', 'retrait', 'paiement'];
         
-        // Générer des transactions aléatoires
+
         foreach ($comptes as $compteTelephone) {
             $nbTransactions = rand(3, 10);
             
@@ -208,7 +207,7 @@ class Seeder
                     'etat' => 'completed'
                 ];
                 
-                // Ajouter source/destination pour certains types
+
                 if ($type === 'paiement') {
                     $transactionData['destination_telephone'] = $comptes[array_rand($comptes)];
                 }

@@ -1,7 +1,7 @@
 <?php
 namespace App\Abstract;
-use App\Core\Session;
 use App\Core\App;
+use App\Core\Session;
 
 abstract class AbstractController {
     protected ?string $layout;
@@ -23,26 +23,20 @@ abstract class AbstractController {
 
     public function renderHtml(string $view, $data = [])
     {
-        // Assurons-nous que les variables d'environnement sont disponibles dans les vues
         $baseUrl = getenv('BASE_URL') ?: '';
         
-        // Ajoutons les informations communes à toutes les vues
         $data['baseUrl'] = $baseUrl;
         
-        // Définir un titre par défaut uniquement si un layout est utilisé
         if ($this->layout && file_exists($this->layout) && !isset($data['title'])) {
             $data['title'] = 'Maxit - Plateforme de services financiers';
         }
         
-        // Extraction des variables pour les rendre accessibles dans la vue
         extract($data);
         
-        // Chargement de la vue
         ob_start();
         require_once dirname(__DIR__, 3) . '/templates/' . $view . '.html.php';
         $contentForLayout = ob_get_clean();
         
-        // Si un layout est défini, l'utiliser pour encadrer le contenu
         if ($this->layout && file_exists($this->layout)) {
             error_log("Utilisation du layout: " . $this->layout . " pour la vue: " . $view);
             ob_start();
@@ -74,10 +68,7 @@ abstract class AbstractController {
         }
     }
     
-    /**
-     * Vérifie si l'utilisateur est authentifié
-     * @return object L'objet utilisateur
-     */
+
     protected function checkAuthentication()
     {
         $user = $this->session->get('user');
@@ -90,11 +81,7 @@ abstract class AbstractController {
         return $user;
     }
     
-    /**
-     * Récupère le numéro de téléphone de l'utilisateur
-     * @param mixed $user L'objet utilisateur
-     * @return string Le numéro de téléphone
-     */
+
     protected function getUserTelephone($user)
     {
         $telephone = $this->session->get('user_id');
@@ -115,11 +102,6 @@ abstract class AbstractController {
         return (string) $telephone;
     }
     
-    /**
-     * Gère les erreurs et affiche une page d'erreur
-     * @param \Exception $e L'exception levée
-     * @param string $pageType Le type de page où l'erreur s'est produite
-     */
     protected function handleError(\Exception $e, $pageType)
     {
         $controllerName = get_class($this);
@@ -131,11 +113,7 @@ abstract class AbstractController {
         ]);
     }
     
-    /**
-     * Récupère les comptes d'un utilisateur
-     * @param string $telephone Le numéro de téléphone de l'utilisateur
-     * @return array Les comptes de l'utilisateur
-     */
+
     protected function getComptesUtilisateur(string $telephone): array
     {
         try {

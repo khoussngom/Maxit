@@ -1,7 +1,7 @@
 <?php
+use App\Controllers\CompteController;
 use App\Controllers\AcceuilController;
 use App\Controllers\SecurityController;
-use App\Controllers\CompteController;
 use App\Controllers\TransactionController;
 
 return $routes = [
@@ -90,7 +90,6 @@ return $routes = [
         'action' => 'storeChangePrincipal',
         'method' => 'POST'
     ],
-    // Routes pour les dépôts
     'GET:/transactions/depot' => [
         'controller' => TransactionController::class,
         'middlewares' => ['auth'],
@@ -103,14 +102,14 @@ return $routes = [
         'action' => 'processDepot',
         'method' => 'POST'
     ],
-    // Route pour l'annulation d'un dépôt
+
     'POST:/transactions/annuler-depot' => [
         'controller' => TransactionController::class,
         'middlewares' => ['auth'],
         'action' => 'annulerDepot',
         'method' => 'POST'
     ],
-    // Route pour la recherche de compte (US6)
+
     'GET:/comptes/recherche' => [
         'controller' => CompteController::class,
         'middlewares' => ['auth'],

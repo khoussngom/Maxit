@@ -2,8 +2,8 @@
 
 namespace App\Migrations;
 
-use App\Core\Database;
 use App\Core\App;
+use App\Core\Database;
 
 class Migration
 {
@@ -20,10 +20,8 @@ class Migration
         try {
             $this->pdo->beginTransaction();
             
-            // Création des types ENUM
             $this->createTypes();
             
-            // Création des tables
             $this->createPersonneTable();
             $this->createCompteTable();
             $this->createTransactionsTable();
@@ -39,7 +37,6 @@ class Migration
 
     private function createTypes(): void
     {
-        // Vérifier si le type type_compte existe déjà
         $stmt = $this->pdo->query("SELECT 1 FROM pg_type WHERE typname = 'type_compte'");
         if (!$stmt->fetch()) {
             $this->pdo->exec("
@@ -51,7 +48,6 @@ class Migration
             error_log("Type ENUM type_compte créé");
         }
 
-        // Vérifier si le type type_personne existe déjà
         $stmt = $this->pdo->query("SELECT 1 FROM pg_type WHERE typname = 'type_personne'");
         if (!$stmt->fetch()) {
             $this->pdo->exec("
@@ -63,7 +59,6 @@ class Migration
             error_log("Type ENUM type_personne créé");
         }
 
-        // Vérifier si le type type_transaction existe déjà
         $stmt = $this->pdo->query("SELECT 1 FROM pg_type WHERE typname = 'type_transaction'");
         if (!$stmt->fetch()) {
             $this->pdo->exec("
@@ -117,7 +112,6 @@ class Migration
 
     private function createTransactionsTable(): void
     {
-        // Vérifier si la séquence existe déjà
         $stmt = $this->pdo->query("SELECT 1 FROM pg_class WHERE relname = 'transactions_id_seq'");
         if (!$stmt->fetch()) {
             $this->pdo->exec("

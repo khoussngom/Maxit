@@ -378,7 +378,6 @@ class TransactionController extends AbstractController
                 exit;
             }
             
-            // Effectuer le dépôt
             $transactionService = $app->getDependency('transactionService');
             $success = $transactionService->effectuerDepot($compteId, $montant, $motif);
             
