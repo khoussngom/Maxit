@@ -32,13 +32,12 @@ class TransactionRepository extends \App\Abstract\AbstractRepository
                 $data['date'] = date('Y-m-d');
             }
             
-            // Ajout du champ status pour les transactions en attente
             if (!isset($data['status'])) {
                 $data['status'] = 'complete';
             }
             
             $validColumns = ['id', 'montant', 'compte_telephone', 'type', 'date', 'motif', 
-                           'destination_telephone', 'source_telephone', 'status'];
+                            'destination_telephone', 'source_telephone', 'status'];
             $filteredData = array_intersect_key($data, array_flip($validColumns));
             
             $columns = implode(', ', array_keys($filteredData));
@@ -239,7 +238,7 @@ class TransactionRepository extends \App\Abstract\AbstractRepository
     public function findById(string $table, string $id): ?array
     {
         if ($table !== 'transactions') {
-            // Appel à la méthode parent pour les autres tables
+
             return parent::findById($table, $id);
         }
         
@@ -341,12 +340,12 @@ class TransactionRepository extends \App\Abstract\AbstractRepository
     {
         try {
             $sql = "SELECT t.* 
-                   FROM transactions t
-                   JOIN compte c ON t.compte_telephone = c.telephone
-                   WHERE c.personne_telephone = :telephone
-                   AND t.type = 'depot'
-                   AND t.status = 'pending'
-                   ORDER BY t.date DESC";
+                    FROM transactions t
+                    JOIN compte c ON t.compte_telephone = c.telephone
+                    WHERE c.personne_telephone = :telephone
+                    AND t.type = 'depot'
+                    AND t.status = 'pending'
+                    ORDER BY t.date DESC";
             
             $stmt = $this->pdo->prepare($sql);
             $stmt->execute(['telephone' => $telephone]);
@@ -462,9 +461,7 @@ class TransactionRepository extends \App\Abstract\AbstractRepository
         }
     }
     
-    /**
-     * Met à jour l'état d'une transaction
-     */
+
     public function updateState(int $transactionId, string $state): bool
     {
         try {
