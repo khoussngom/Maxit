@@ -5,7 +5,7 @@ services:
       - "%db.dsn%"
       - "%db.username%"
       - "%db.password%"
-      - { PDO::ATTR_ERRMODE: PDO::ERRMODE_EXCEPTION }
+      - [3, 2]
 
   session:
     class: App\Core\Session
@@ -22,7 +22,6 @@ services:
     class: App\Repository\TransactionRepository
     arguments: ["@db"]
 
-  # Services métier
   security:
     class: App\Services\SecurityService
     arguments: ["@personneRepository", "@db"]

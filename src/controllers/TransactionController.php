@@ -1,13 +1,6 @@
 <?php
 
-name    public function index(): void
-    {
-        try {
-            $user = $this->checkAuthentication();
-            $telephone = $this->getUserTelephone($user);
-            
-            $page = isset($_GET['page']) ? max(1, (int)$_GET['page']) : 1;
-            $perPage = isset($_GET['perPage']) ? (int)$_GET['perPage'] : 7;lers;
+namespace App\Controllers;
 
 use App\Core\App;
 use App\Abstract\AbstractController;
@@ -22,17 +15,8 @@ class TransactionController extends AbstractController
             $user = $this->checkAuthentication();
             $telephone = $this->getUserTelephone($user);
             
-
-            $page = isset($_GET['page']) ? max(1, (int)$_GET['page']) :            // Récupérer la transaction
-            $app = \App\Core\App::getInstance();
-            $transactionRepository = $app->getDependency('transactionRepository');
-            $transaction = $transactionRepository->findById('transactions', (string)$transactionId);
-            
-            if (!$transaction) {
-                $this->session->setFlash('error', 'Transaction introuvable');
-                header('Location: /transactions');
-                exit;
-            }      $perPage = isset($_GET['perPage']) ? (int)$_GET['perPage'] : 7;
+            $page = isset($_GET['page']) ? max(1, (int)$_GET['page']) : 1;
+            $perPage = isset($_GET['perPage']) ? (int)$_GET['perPage'] : 7;
             $perPage = in_array($perPage, [7, 15, 25, 50]) ? $perPage : 7;
             
             $filters = $this->getTransactionFilters();

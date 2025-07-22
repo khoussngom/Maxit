@@ -69,15 +69,35 @@ class App
                 throw new \Exception("Format du fichier services.yml invalide");
             }
             
-
+            // Initialiser les paramètres
             $parameters = [];
+            
+            // Charger les paramètres depuis le fichier services.yml
             if (isset($services['parameters']) && is_array($services['parameters'])) {
                 $parameters = $services['parameters'];
-            } else {
+            }
+            
+            // Charger les paramètres depuis un fichier parameters.yml séparé
+            $parametersFile = dirname(__DIR__) . '/config/parameters.yml';
+            if (file_exists($parametersFile)) {
+                error_log("Chargement des paramètres depuis: " . $parametersFile);
+                try {
+                    $parametersData = Yaml::parseFile($parametersFile);
+                    if (isset($parametersData['parameters']) && is_array($parametersData['parameters'])) {
+                        // Fusionner les paramètres, ceux de parameters.yml ayant la priorité
+                        $parameters = array_merge($parameters, $parametersData['parameters']);
+                    }
+                } catch (\Exception $e) {
+                    error_log("Erreur lors du chargement des paramètres: " . $e->getMessage());
+                }
+            }
+            
+            // Fallback sur les variables d'environnement si nécessaire
+            if (empty($parameters)) {
                 $parameters = [
-                    'db.dsn' => getenv('DB_DSN'),
-                    'db.username' => getenv('DB_USERNAME'),
-                    'db.password' => getenv('DB_PASSWORD')
+                    'db.dsn' => getenv('DB_DSN') ?: 'pgsql:host=' . getenv('DB_HOST') . ';port=' . getenv('DB_PORT') . ';dbname=' . getenv('DB_NAME'),
+                    'db.username' => getenv('DB_USER'),
+                    'db.password' => getenv('DB_PASS')
                 ];
             }
             
@@ -94,7 +114,6 @@ class App
     
     private function createService(string $name, array $serviceConfig, array $parameters): void
     {
-
         if (isset($this->dependencies[$name])) {
             return;
         }
@@ -106,25 +125,32 @@ class App
         $className = $serviceConfig['class'];
         $arguments = $serviceConfig['arguments'] ?? [];
         
-
         $resolvedArguments = [];
         foreach ($arguments as $argument) {
             if (is_string($argument) && strpos($argument, '@') === 0) {
-
+                // C'est une référence à un autre service
                 $serviceName = substr($argument, 1);
                 if (!isset($this->dependencies[$serviceName])) {
-
-                    if (isset($services['services'][$serviceName])) {
-                        $this->createService($serviceName, $services['services'][$serviceName], $parameters);
-                    } else {
+                    // Le service n'existe pas encore, nous devons d'abord le créer
+                    // Essayons de le charger par défaut
+                    try {
+                        // Essayer de charger un service par défaut
+                        if (method_exists($this, 'loadDefaultDependencies')) {
+                            $this->loadDefaultDependencies();
+                        }
+                    } catch (\Exception $e) {
                         throw new \Exception("Service référencé non trouvé: $serviceName");
                     }
                 }
                 $resolvedArguments[] = $this->dependencies[$serviceName];
             } elseif (is_string($argument) && strpos($argument, '%') === 0 && substr($argument, -1) === '%') {
-
+                // C'est un paramètre
                 $paramName = substr($argument, 1, -1);
-                $resolvedArguments[] = $parameters[$paramName] ?? null;
+                if (isset($parameters[$paramName])) {
+                    $resolvedArguments[] = $this->resolveParameter($parameters[$paramName]);
+                } else {
+                    throw new \Exception("Paramètre non trouvé: $paramName");
+                }
             } else {
 
                 $resolvedArguments[] = $argument;
@@ -209,9 +235,11 @@ class App
             }
             
             try {
-                if (isset($this->dependencies['personneRepository'])) {
+                if (isset($this->dependencies['personneRepository']) && isset($this->dependencies['db'])) {
                     $this->dependencies['security'] = new SecurityService();
                     error_log("SecurityService initialisé avec succès");
+                } else {
+                    error_log("Impossible d'initialiser SecurityService : dépendances manquantes");
                 }
             } catch (\Exception $e) {
                 error_log("Erreur d'initialisation du service de sécurité: " . $e->getMessage());
@@ -238,7 +266,26 @@ class App
         
         return $this->dependencies[$name];
     }
+    
+    /**
+     * Résout les valeurs des paramètres en remplaçant les références aux variables d'environnement
+     */
+    private function resolveParameter(string $value): string
+    {
+        // Vérifier si c'est une référence à une variable d'environnement
+        if (preg_match('/%env\((.*?)\)%/', $value, $matches)) {
+            $envName = $matches[1];
+            $envValue = getenv($envName);
+            
+            if ($envValue === false) {
+                error_log("Variable d'environnement non définie: $envName");
+                return '';
+            }
+            
+            // Remplacer la référence par la valeur réelle
+            return str_replace("%env($envName)%", $envValue, $value);
+        }
+        
+        return $value;
+    }
 }
-
-
-

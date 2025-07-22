@@ -26,7 +26,7 @@ class SecurityService
             $app = App::getInstance();
             $this->personneRepository = $app->getDependency('personneRepository');
             $this->db = $app->getDependency('db');
-            $this->app = App::getInstance();
+            $this->app = $app; // Utiliser la même instance déjà récupérée
             self::$isInitializing = false;
         } catch (\Exception $e) {
             self::$isInitializing = false;
