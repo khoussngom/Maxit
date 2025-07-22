@@ -1,7 +1,7 @@
 <?php
+use App\Controllers\CompteController;
 use App\Controllers\AcceuilController;
 use App\Controllers\SecurityController;
-use App\Controllers\CompteController;
 use App\Controllers\TransactionController;
 
 return $routes = [
@@ -88,6 +88,38 @@ return $routes = [
         'controller' => CompteController::class,
         'middlewares' => ['auth'],
         'action' => 'storeChangePrincipal',
+        'method' => 'POST'
+    ],
+    'GET:/transactions/depot' => [
+        'controller' => TransactionController::class,
+        'middlewares' => ['auth'],
+        'action' => 'showDepotForm',
+        'method' => 'GET'
+    ],
+    'POST:/transactions/depot' => [
+        'controller' => TransactionController::class,
+        'middlewares' => ['auth'],
+        'action' => 'processDepot',
+        'method' => 'POST'
+    ],
+
+    'POST:/transactions/annuler-depot' => [
+        'controller' => TransactionController::class,
+        'middlewares' => ['auth'],
+        'action' => 'annulerDepot',
+        'method' => 'POST'
+    ],
+
+    'GET:/comptes/recherche' => [
+        'controller' => CompteController::class,
+        'middlewares' => ['auth'],
+        'action' => 'recherche',
+        'method' => 'GET'
+    ],
+    'POST:/comptes/recherche' => [
+        'controller' => CompteController::class,
+        'middlewares' => ['auth'],
+        'action' => 'recherche',
         'method' => 'POST'
     ],
 ];

@@ -16,7 +16,8 @@ class SecurityController extends AbstractController
 
     public function __construct()
     {
-        parent::__construct();
+
+        parent::__construct(null);
         $this->securityService = new SecurityService();
     }
 
@@ -42,17 +43,16 @@ class SecurityController extends AbstractController
 
     public function login()
     {
-
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-
             $old = $this->session->get('old_input') ?? [];
             $errors = $this->session->get('flash_errors') ?? [];
             
-
             $this->session->set('old_input', null);
             $this->session->set('flash_errors', null);
             
 
+            $this->layout = null;
+            
             $this->renderHtml('login', [
                 'old' => $old,
                 'errors' => $errors
@@ -235,11 +235,15 @@ class SecurityController extends AbstractController
 
     public function index():void
     {
-
         Validator::reset();
         
 
-        $this->renderHtml('login');
+        $this->layout = null;
+        
+
+        $this->renderHtml('login', [
+            'title' => 'Maxit - Plateforme de services financiers'
+        ]);
     }
 
     

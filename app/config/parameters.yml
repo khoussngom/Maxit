@@ -1,0 +1,4 @@
+parameters:
+  db.dsn: "pgsql:host=%env(DB_HOST)%;port=%env(DB_PORT)%;dbname=%env(DB_NAME)%"
+  db.username: "%env(DB_USER)%"
+  db.password: "%env(DB_PASS)%"

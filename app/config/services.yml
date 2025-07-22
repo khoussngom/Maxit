@@ -1,0 +1,35 @@
+services:
+  db:
+    class: PDO
+    arguments:
+      - "%db.dsn%"
+      - "%db.username%"
+      - "%db.password%"
+      - [3, 2]
+
+  session:
+    class: App\Core\Session
+
+  personneRepository:
+    class: App\Repository\PersonneRepository
+    arguments: ["@db"]
+
+  compteRepository:
+    class: App\Repository\CompteRepository
+    arguments: ["@db"]
+
+  transactionRepository:
+    class: App\Repository\TransactionRepository
+    arguments: ["@db"]
+
+  security:
+    class: App\Services\SecurityService
+    arguments: ["@personneRepository", "@db"]
+
+  compteService:
+    class: App\Services\CompteService
+    arguments: ["@compteRepository"]
+
+  transactionService:
+    class: App\Services\TransactionService
+    arguments: ["@transactionRepository", "@compteRepository"]

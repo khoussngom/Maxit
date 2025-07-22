@@ -11,7 +11,7 @@ abstract class AbstractController{
     public function __construct($layout = null)
     {
         $this->session = Session::getInstance();
-        $this->layout = $layout ?? dirname(__DIR__, 3) . '/template/layout/base.layout.php';
+        $this->layout = $layout ?? dirname(__DIR__, 3) . '/templates/layout/sidebar-main.layout.php';
     }
 
     abstract public  function index(): void;
@@ -24,11 +24,31 @@ abstract class AbstractController{
 
     public function renderHtml(string $view, $data = [])
     {
+        $baseUrl = getenv('BASE_URL') ?: '';
+        
+        $data['baseUrl'] = $baseUrl;
+        
+        if ($this->layout && file_exists($this->layout) && !isset($data['title'])) {
+            $data['title'] = 'Maxit - Plateforme de services financiers';
+        }
+        
         extract($data);
+        
         ob_start();
         require_once dirname(__DIR__, 3) . '/templates/' . $view . '.html.php';
         $contentForLayout = ob_get_clean();
-        echo $contentForLayout;
+        
+        if ($this->layout && file_exists($this->layout)) {
+            error_log("Utilisation du layout: " . $this->layout . " pour la vue: " . $view);
+            ob_start();
+            require_once $this->layout;
+            $output = ob_get_clean();
+        } else {
+            error_log("Pas de layout utilisé pour la vue: " . $view);
+            $output = $contentForLayout;
+        }
+        
+        echo $output;
     }
 
     public function requireAuth(): void

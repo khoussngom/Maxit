@@ -7,7 +7,6 @@ use App\Abstract\AbstractController;
 
 class CompteController extends AbstractController
 {
-
     public function index(): void
     {
         try {
@@ -40,7 +39,6 @@ class CompteController extends AbstractController
             $this->handleError($e, 'comptes');
         }
     }
-    
 
     public function create(): void
     {
@@ -65,7 +63,6 @@ class CompteController extends AbstractController
             $this->handleError($e, 'création de compte secondaire');
         }
     }
-    
 
     public function store(): void
     {
@@ -119,7 +116,6 @@ class CompteController extends AbstractController
             $this->handleError($e, 'changement de compte principal');
         }
     }
-    
 
     public function storeChangePrincipal(): void
     {
@@ -150,7 +146,65 @@ class CompteController extends AbstractController
             $this->handleStoreError($e, 'comptes', 'changement de compte principal');
         }
     }
-    
+
+    public function recherche(): void
+    {
+        try {
+            $user = $this->checkAuthentication();
+            
+            if (!isset($user->typepersonne) || $user->typepersonne !== 'commercial') {
+                $this->session->setFlash('error', 'Vous n\'êtes pas autorisé à accéder à cette fonctionnalité');
+                header('Location: /accueil');
+                exit;
+            }
+            
+            $telephone = $_GET['telephone'] ?? null;
+            $result = null;
+            $personne = null;
+            $transactions = [];
+            $error = null;
+            
+            if ($telephone) {
+                $app = App::getInstance();
+                $compteRepository = $app->getDependency('compteRepository');
+                $personneRepository = $app->getDependency('personneRepository');
+                $transactionRepository = $app->getDependency('transactionRepository');
+                
+                try {
+                    $compte = $compteRepository->findByTelephone($telephone);
+                    
+                    if (!$compte) {
+                        $error = 'Aucun compte trouvé avec ce numéro';
+                    } else {
+
+                        if (isset($compte['personne_telephone'])) {
+                            $personne = $personneRepository->findByTelephone($compte['personne_telephone']);
+                        }
+                        
+
+
+                        $transactions = $transactionRepository->findRecentByCompte($telephone, 10);
+                    }
+                } catch (\Exception $e) {
+                    error_log('Erreur lors de la recherche du compte: ' . $e->getMessage());
+                    $error = 'Une erreur est survenue lors de la recherche';
+                }
+            }
+            
+
+            $this->renderHtml('recherche/compte', [
+                'title' => 'Recherche de compte',
+                'user' => $user,
+                'telephone' => $telephone,
+                'compte' => $compte ?? null,
+                'personne' => $personne,
+                'transactions' => $transactions,
+                'error' => $error ?? $this->session->getFlash('error')
+            ]);
+        } catch (\Exception $e) {
+            $this->handleError($e, 'recherche de compte');
+        }
+    }
 
     private function checkAuthentication()
     {
@@ -163,7 +217,6 @@ class CompteController extends AbstractController
         
         return $user;
     }
-    
 
     private function getUserTelephone($user)
     {
@@ -184,7 +237,6 @@ class CompteController extends AbstractController
         
         return (string) $telephone;
     }
-    
 
     private function validateSecondaryAccount()
     {
@@ -206,7 +258,6 @@ class CompteController extends AbstractController
         
         return $numCompteSecondaire;
     }
-    
 
     private function getSelectedAccount($comptesSecondaires)
     {
@@ -228,7 +279,6 @@ class CompteController extends AbstractController
         
         return $compteSelectionne;
     }
-    
 
     private function handleError(\Exception $e, $pageType)
     {
@@ -239,14 +289,13 @@ class CompteController extends AbstractController
             'message' => "Une erreur est survenue lors du chargement de la page de $pageType."
         ]);
     }
-    
 
     private function handleStoreError(\Exception $e, $redirectUrl, $operationType)
     {
         error_log("Erreur dans CompteController lors de $operationType: " . $e->getMessage());
         error_log("Trace: " . $e->getTraceAsString());
         
-        $this->session->setFlash('error', "Une erreur est survenue lors de $operationType.");
+        $this->session->setFlash('error', "Une erreur est survenue lors de $operationType: " . $e->getMessage());
         
         header("Location: /$redirectUrl");
         exit;
