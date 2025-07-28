@@ -13,7 +13,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 const value = numero.value;
                 console.log(value);
 
-                fetch(`http://localhost:8000/api/cni?nci=${encodeURIComponent(value)}`)
+                fetch(`https://appdaf-production.up.railway.app/api/cni?nci=${encodeURIComponent(value)}`)
                     .then(res => {
                         if (!res.ok) throw new Error("Network response was not ok");
                         return res.json();
