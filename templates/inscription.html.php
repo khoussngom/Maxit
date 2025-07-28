@@ -35,7 +35,7 @@
                 
                 <div>
                     <label class="block text-orange-500 font-medium mb-2">Numéro CNI</label>
-                    <input type="text" name="numeroIdentite" value="<?= htmlspecialchars($old['numeroIdentite'] ?? '') ?>"
+                    <input type="text" name="numeroIdentite" id="cni" value="<?= htmlspecialchars($old['numeroIdentite'] ?? '') ?>"
                             class="w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-orange-500">
                     <?php if (!empty($errors['numeroIdentite'])): ?>
                         <div class="text-red-600 text-sm"><?= htmlspecialchars($errors['numeroIdentite']) ?></div>
@@ -46,14 +46,14 @@
             <div class="grid grid-cols-2 gap-4">
                 <div>
                     <label class="block text-orange-500 font-medium mb-2">Nom :</label>
-                    <input type="text" name="nom" value="<?= htmlspecialchars($old['nom'] ?? '') ?>" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent" placeholder="Entrez votre nom">
+                    <input type="text" name="nom" id="nom" value="<?= htmlspecialchars($old['nom'] ?? '') ?>" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent" placeholder="Entrez votre nom">
                     <?php if (!empty($errors['nom'])): ?>
                         <div class="text-red-600 text-sm"><?= htmlspecialchars($errors['nom']) ?></div>
                     <?php endif; ?>
                 </div>
                 <div>
                     <label class="block text-orange-500 font-medium mb-2">Prénom :</label>
-                    <input type="text" name="prenom" value="<?= htmlspecialchars($old['prenom'] ?? '') ?>" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent" placeholder="Entrez votre prénom">
+                    <input type="text" name="prenom" id="prenom" value="<?= htmlspecialchars($old['prenom'] ?? '') ?>" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent" placeholder="Entrez votre prénom">
                     <?php if (!empty($errors['prenom'])): ?>
                         <div class="text-red-600 text-sm"><?= htmlspecialchars($errors['prenom']) ?></div>
                     <?php endif; ?>
@@ -62,7 +62,7 @@
 
             <div>
                 <label class="block text-orange-500 font-medium mb-2">Adresse :</label>
-                <input type="text" name="adresse" value="<?= htmlspecialchars($old['adresse'] ?? '') ?>" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent" placeholder="Entrez votre adresse">
+                <input type="text" name="adresse" id="adresse" value="<?= htmlspecialchars($old['adresse'] ?? '') ?>" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent" placeholder="Entrez votre adresse">
                 <?php if (!empty($errors['adresse'])): ?>
                     <div class="text-red-600 text-sm"><?= htmlspecialchars($errors['adresse']) ?></div>
                 <?php endif; ?>
@@ -113,6 +113,7 @@
             </button>
         </form>
     </div>
+    <script src="static/js/fetch.js"></script>
 </body>
 
 </html>
